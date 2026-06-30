@@ -41,7 +41,10 @@ export enum ErrorCode {
   
   // 事件查询错误 (7000-7999)
   EVENT_NOT_FOUND = 7000,
-  EVENT_QUERY_ERROR = 7001
+  EVENT_QUERY_ERROR = 7001,
+
+  // 故障转移错误 (8000-8999)
+  RPC_ALL_ENDPOINTS_EXHAUSTED = 8000
 }
 
 /**
@@ -87,7 +90,10 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   
   // 事件查询错误
   [ErrorCode.EVENT_NOT_FOUND]: "事件不存在",
-  [ErrorCode.EVENT_QUERY_ERROR]: "事件查询失败"
+  [ErrorCode.EVENT_QUERY_ERROR]: "事件查询失败",
+
+  // 故障转移错误
+  [ErrorCode.RPC_ALL_ENDPOINTS_EXHAUSTED]: "所有RPC备用节点均已耗尽"
 };
 
 /**
@@ -133,7 +139,10 @@ export const HttpStatusCodes: Record<ErrorCode, number> = {
   
   // 事件查询错误
   [ErrorCode.EVENT_NOT_FOUND]: 404,
-  [ErrorCode.EVENT_QUERY_ERROR]: 400
+  [ErrorCode.EVENT_QUERY_ERROR]: 400,
+
+  // 故障转移错误
+  [ErrorCode.RPC_ALL_ENDPOINTS_EXHAUSTED]: 503
 };
 
 /**

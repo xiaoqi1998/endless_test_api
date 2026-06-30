@@ -1,0 +1,33 @@
+{"timestamp":"2026-06-30T02:09:56.088Z","method":"POST","url":"/api/read","statusCode":200,"request":{"headers":{"user-agent":"Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.26100.8655","content-type":"application/json","host":"localhost:3001","content-length":"303","expect":"100-continue","connection":"Keep-Alive"},"query":{},"body":{"args":["6L7gMRQj5qUebuHJnBvKBRh6WpzDunoAqKQkwK4ntnKK","5K6PhkkB6wJuYAFaEPiuWpx2qkGJd3Y1hHaXpKZWeSsR"],"moduleName":"coin","typeArgs":[],"contractAddress":"0x4","functionName":"balance"},"params":{}},"response":"{\"function\":\"0x4::coin::balance\",\"result\":[\"75000000\"],\"note\":\"成功读取合约状态。结果为合约 View 函数的返回值数组。\"}","durationMs":1128}
+
+============================================================
+{
+  "timestamp": "2026-06-30T02:12:53.511Z",
+  "method": "POST",
+  "url": "/api/read",
+  "statusCode": 200,
+  "request": {
+    "headers": {
+      "user-agent": "Mozilla/5.0 (Windows NT; Windows NT 10.0; zh-CN) WindowsPowerShell/5.1.26100.8655",
+      "content-type": "application/json",
+      "host": "localhost:3001",
+      "content-length": "303",
+      "expect": "100-continue",
+      "connection": "Keep-Alive"
+    },
+    "query": {},
+    "body": {
+      "args": [
+        "6L7gMRQj5qUebuHJnBvKBRh6WpzDunoAqKQkwK4ntnKK",
+        "5K6PhkkB6wJuYAFaEPiuWpx2qkGJd3Y1hHaXpKZWeSsR"
+      ],
+      "moduleName": "coin",
+      "typeArgs": [],
+      "contractAddress": "0x4",
+      "functionName": "balance"
+    },
+    "params": {}
+  },
+  "response": "{\"function\":\"0x4::coin::balance\",\"result\":[\"75000000\"],\"note\":\"成功读取合约状态。结果为合约 View 函数的返回值数组。\"}",
+  "durationMs": 2442
+}
