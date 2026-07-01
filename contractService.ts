@@ -96,6 +96,12 @@ const DEFAULT_NETWORK_URLS: Record<string, string> = {
     devnet: "https://rpc-dev.endless.link/v1"
 };
 
+const DEFAULT_NETWORK_CHAIN_IDS: Record<string, number> = {
+    mainnet: 220,
+    testnet: 221,
+    devnet: 220
+};
+
 function buildFailoverOptions(): any {
     return {
         name: "Endless RPC",
@@ -145,8 +151,17 @@ export interface SwitchNetworkInput {
 const dataSettingsPath = path.resolve(__dirname, "..", "data", "settings.yaml");
 const dataSettings = loadNetworkSettings(dataSettingsPath);
 const fallbackEndpoints = loadEndpointsFromSettings();
-const initialEndpoints = dataSettings.endpoints.length > 0 ? dataSettings.endpoints : fallbackEndpoints;
-const initialNetwork = resolveNetwork(dataSettings.network || process.env.ENDLESS_NETWORK);
+let initialEndpoints = dataSettings.endpoints.length > 0 ? dataSettings.endpoints : fallbackEndpoints;
+const initialNetworkName = dataSettings.network || process.env.ENDLESS_NETWORK || "devnet";
+const initialNetwork = resolveNetwork(initialNetworkName);
+
+// 如果 endpoints 没有配置 chain_id，且是预设网络，自动添加默认 chain_id
+if (initialEndpoints.length > 0 && !initialEndpoints[0].chain_id) {
+    const defaultChainId = DEFAULT_NETWORK_CHAIN_IDS[initialNetworkName.toLowerCase()];
+    if (defaultChainId) {
+        initialEndpoints = initialEndpoints.map(ep => ({ ...ep, chain_id: defaultChainId }));
+    }
+}
 
 // 创建 failover 客户端（管理多端点切换、主节点探活、指数退避）
 let failoverClient = new FailoverEndlessClient(initialEndpoints, initialNetwork, buildFailoverOptions());
@@ -199,7 +214,8 @@ export async function switchNetwork(input: SwitchNetworkInput): Promise<NetworkC
                 `切换 ${requestedNetworkName} 失败：未提供 url 或 endpoints，且该网络没有内置默认 RPC`,
             );
         }
-        endpoints = [{ url: defaultUrl, priority: 1 }];
+        const defaultChainId = DEFAULT_NETWORK_CHAIN_IDS[requestedNetworkName];
+        endpoints = [{ url: defaultUrl, priority: 1, chain_id: defaultChainId }];
     }
 
     // 先探活新端点（除非指定 skipProbe），然后确定最终客户端
