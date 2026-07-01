@@ -2,9 +2,56 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0a0e1a" />
-<title>Endless Chain API 调试控制台</title>
+<title>Endless Chain API 调试控制台 | 区块链接口测试与文档</title>
+<meta name="description" content="Endless Chain 区块链 API 调试控制台，提供合约读写、账户查询、交易查询、事件监听等 RESTful 接口的在线测试、SDK 调用与错误码字典。支持 Mainnet/Testnet/Devnet 多网络切换。" />
+<meta name="keywords" content="Endless Chain,区块链 API,智能合约调试,REST API 控制台,Move 合约,链上查询,交易模拟,BCS 编码,Multi-Agent,多签交易,区块链开发工具" />
+<meta name="author" content="Endless Chain" />
+<meta name="robots" content="index, follow" />
+<meta name="application-name" content="Endless API Console" />
+<meta name="google-site-verification" content="googlefac7c2b03389aa88" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Endless Chain API 调试控制台" />
+<meta property="og:description" content="在线调试 Endless Chain 区块链 RESTful API，支持合约读写、账户查询、交易查询、事件监听、SDK 调用与错误码字典。" />
+<meta property="og:site_name" content="Endless API Console" />
+<meta property="og:locale" content="zh_CN" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Endless Chain API 调试控制台" />
+<meta name="twitter:description" content="在线调试 Endless Chain 区块链 RESTful API，支持合约读写、账户查询、交易查询、事件监听、SDK 调用。" />
+
+<!-- Favicon (inline SVG as data URI) -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%237c5cff'/><stop offset='100%25' stop-color='%2322d3ee'/></linearGradient></defs><rect width='32' height='32' rx='8' fill='url(%23g)'/><text x='16' y='22' font-size='18' text-anchor='middle' fill='white'>∞</text></svg>" type="image/svg+xml" />
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+
+<!-- JSON-LD 结构化数据 -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Endless Chain API 调试控制台",
+  "description": "Endless Chain 区块链 API 在线调试工具，提供合约读写、账户查询、交易查询、事件监听、SDK 调用与错误码字典。",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "featureList": [
+    "合约视图函数读取 (GET/POST)",
+    "单签/多签/Multi-Agent 交易写入",
+    "交易模拟与 BCS 编码",
+    "账户资源与模块查询",
+    "交易哈希与版本查询",
+    "链上事件查询",
+    "EndlessClient SDK 在线调用",
+    "错误码字典与处理建议",
+    "Mainnet/Testnet/Devnet 多网络切换"
+  ]
+}
+</script>
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" media="print" onload="this.media='all'" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
 <style>
@@ -483,10 +530,6 @@ pre.json-block .hljs { background: transparent; padding: 0; }
 
   <div class="topbar-right">
     <div class="field-base">
-      <label>BASE</label>
-      <input id="baseUrl" value="http://localhost:3001" spellcheck="false" aria-label="Base URL" />
-    </div>
-    <div class="field-base">
       <label>NET</label>
       <select id="networkPreset" aria-label="Network preset">
         <option value="mainnet">Mainnet</option>
@@ -506,7 +549,18 @@ pre.json-block .hljs { background: transparent; padding: 0; }
   </div>
 </header>
 
-<div class="main" id="main">
+<!-- SEO: 隐藏的 H1 标题，对搜索引擎可见 -->
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap">Endless Chain 区块链 API 调试控制台 — 合约读写、账户查询、交易查询、SDK 调用与错误码字典</h1>
+
+<noscript>
+  <div style="padding:40px;text-align:center;color:#e6ecff;background:#0a0e1a;font-family:sans-serif">
+    <h2>Endless Chain API 调试控制台</h2>
+    <p>此页面需要 JavaScript 才能正常运行。请启用 JavaScript 后刷新页面。</p>
+    <p>本工具提供 Endless Chain 区块链 RESTful API 的在线调试、SDK 调用、接口文档和错误码字典。</p>
+  </div>
+</noscript>
+
+<main class="main" id="main">
 
   <!-- Console View -->
   <div class="view active" id="view-console">
@@ -647,7 +701,7 @@ pre.json-block .hljs { background: transparent; padding: 0; }
     </div>
   </div>
 
-</div>
+</main>
 
 <!-- History drawer -->
 <button class="history-toggle" id="histToggle" title="历史记录" aria-label="历史记录">🕘<span class="badge" id="histBadge" style="display:none">0</span></button>
@@ -660,6 +714,10 @@ pre.json-block .hljs { background: transparent; padding: 0; }
     <div style="text-align:center;color:var(--text-3);padding:40px 0;font-size:12px">暂无历史记录</div>
   </div>
 </aside>
+
+<footer style="position:absolute;bottom:0;left:0;right:0;height:1px;overflow:hidden" aria-label="Endless Chain API Console - 区块链开发调试工具">
+  <p>Endless Chain API Console &copy; 2025 | 区块链 RESTful API 在线调试、SDK 调用与错误码字典</p>
+</footer>
 
 <div class="toast" id="toast"></div>
 
@@ -678,7 +736,7 @@ class EndlessAPIError extends Error {
 }
 
 class EndlessClient {
-  constructor(baseUrl = 'http://localhost:3001') {
+  constructor(baseUrl = '') {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
     this.adminToken = '';
   }
@@ -1003,7 +1061,7 @@ const SDK_METHODS = [
 let currentEndpoint = null;
 let currentRespTab = 'json';
 let lastResponse = null;
-let client = new EndlessClient(document.getElementById('baseUrl').value);
+let client = new EndlessClient();
 const $ = (id) => document.getElementById(id);
 
 function escapeHtml(s) {
@@ -1474,7 +1532,7 @@ function addHistory(req, status, durMs, data) {
   let hist = loadHistory();
   hist.unshift({
     id: Math.random().toString(36).slice(2),
-    ts: Date.now(), method: req.method, path: req.path, baseUrl: $('baseUrl').value,
+    ts: Date.now(), method: req.method, path: req.path,
     status, durationMs: durMs, requestBody: req.body, endpointId: req.endpoint?.id,
     responseSnippet: (typeof data === 'string' ? data : JSON.stringify(data)).slice(0, 500),
   });
@@ -1509,8 +1567,7 @@ function renderHistory() {
   });
 }
 function replayHistory(h) {
-  $('baseUrl').value = h.baseUrl;
-  client.baseUrl = h.baseUrl.replace(/\/+$/, '');
+  // baseUrl 使用同源地址，无需切换
   if (h.endpointId) { selectEndpoint(h.endpointId); }
   $('histDrawer').classList.remove('open');
   showToast('已载入历史请求，请检查参数后发送');
@@ -1721,7 +1778,6 @@ async function callSdkMethod() {
   $('sdkMeta').textContent = '调用中...';
   $('sdkRespBody').innerHTML = '<pre class="json-block" style="color:var(--text-3)">// 调用中...</pre>';
 
-  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
   const t0 = performance.now();
   try {
     const result = await client[m.name](...built.callArgs);
@@ -1764,7 +1820,6 @@ async function checkHealth() {
   const txt = $('lampText');
   dot.className = 'lamp-dot checking';
   txt.textContent = '检测中';
-  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
   try {
     const [netCfg, health] = await Promise.all([
       client.getNetwork().catch(() => null),
@@ -1827,11 +1882,7 @@ document.querySelectorAll('.resp-tab').forEach(b => {
     renderRespTab();
   };
 });
-$('baseUrl').addEventListener('change', () => {
-  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
-  localStorage.setItem('endless_debug_base_url', $('baseUrl').value);
-  checkHealth();
-});
+// baseUrl 默认使用同源地址，无需配置
 $('networkPreset').onchange = async () => {
   const v = $('networkPreset').value;
   if (!v) return;
@@ -1888,8 +1939,6 @@ document.addEventListener('keydown', e => {
  *  Init
  * ========================================================================= */
 (function init() {
-  const saved = localStorage.getItem('endless_debug_base_url');
-  if (saved) { $('baseUrl').value = saved; client.baseUrl = saved.replace(/\/+$/, ''); }
   const savedToken = localStorage.getItem('endless_debug_admin_token');
   if (savedToken) $('adminToken').value = savedToken;
   $('adminToken').addEventListener('change', () => {
