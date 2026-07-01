@@ -58,8 +58,11 @@ import {
 } from "@endlesslab/endless-ts-sdk";
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
+import yaml from "js-yaml";
 import { ErrorCode, ErrorHandler, EndlessAPIError } from './errorDefinitions';
-import { FailoverEndlessClient, loadEndpointsFromSettings } from './failoverClient';
+import { FailoverEndlessClient, loadEndpointsFromSettings, loadNetworkSettings } from './failoverClient';
+import type { EndpointConfig } from './failoverClient';
 
 // 确保在读取任何环境变量之前加载 .env
 // 优先加载项目根目录的 .env（与 Python 端共享同一份配置），再用本目录 .env 覆盖
@@ -67,33 +70,89 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 dotenv.config();
 
 // ============================================================================
-// 1. 全局客户端初始化（多节点故障转移）
+// 1. 全局客户端初始化（多节点故障转移，支持运行时切换）
 // ============================================================================
 
-function resolveNetwork(): Network {
-    const raw = (process.env.ENDLESS_NETWORK || "devnet").toLowerCase();
-    if (raw === "mainnet") return Network.MAINNET;
-    if (raw === "testnet") return Network.TESTNET;
-    if (raw === "local") return Network.LOCAL;
-    if (raw === "custom") return Network.CUSTOM;
+function resolveNetwork(raw?: string): Network {
+    const network = (raw || process.env.ENDLESS_NETWORK || "devnet").toLowerCase();
+    if (network === "mainnet") return Network.MAINNET;
+    if (network === "testnet") return Network.TESTNET;
+    if (network === "local") return Network.LOCAL;
+    if (network === "custom") return Network.CUSTOM;
     return Network.DEVNET;
 }
 
-// 从 settings.yaml 加载端点列表（回退到 .env 单端点）
-const _endpoints = loadEndpointsFromSettings();
-const _network = resolveNetwork();
+function networkNameFromEnum(network: Network): string {
+    if (network === Network.MAINNET) return "mainnet";
+    if (network === Network.TESTNET) return "testnet";
+    if (network === Network.LOCAL) return "local";
+    if (network === Network.CUSTOM) return "custom";
+    return "devnet";
+}
+
+const DEFAULT_NETWORK_URLS: Record<string, string> = {
+    mainnet: "https://rpc.endless.link/v1",
+    testnet: "https://rpc-test.endless.link/v1",
+    devnet: "https://rpc-dev.endless.link/v1"
+};
+
+function buildFailoverOptions(): any {
+    return {
+        name: "Endless RPC",
+        maxRetries: Number(process.env.RPC_MAX_RETRIES_PER_ENDPOINT ?? 3),
+        baseDelayMs: Number(process.env.RPC_RETRY_BASE_DELAY_MS ?? 1000),
+        recoverySuccessCount: Number(process.env.RPC_PRIMARY_RECOVERY_SUCCESS_COUNT ?? 5),
+        probeTimeoutMs: Number(process.env.RPC_PRIMARY_PROBE_TIMEOUT_MS ?? 10000),
+    };
+}
+
+function persistNetworkSettings(network: Network, endpoints: EndpointConfig[]) {
+    const dataDir = path.resolve(__dirname, "..", "data");
+    const dataPath = path.join(dataDir, "settings.yaml");
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
+    const yamlContent = yaml.dump({
+        network: networkNameFromEnum(network),
+        rpc: {
+            endless: {
+                endpoints: endpoints.map((ep) => ({
+                    url: ep.url,
+                    priority: ep.priority ?? 1,
+                    ...(ep.chain_id !== undefined ? { chain_id: ep.chain_id } : {}),
+                })),
+            },
+        },
+    }, { lineWidth: -1 });
+    fs.writeFileSync(dataPath, yamlContent, "utf-8");
+}
+
+export interface NetworkConfig {
+    network: string;
+    activeUrl: string;
+    endpoints: EndpointConfig[];
+}
+
+export interface SwitchNetworkInput {
+    network: string;
+    url?: string;
+    endpoints?: EndpointConfig[];
+    /** 跳过探活，直接切换（默认 false）。当目标 RPC 有 SSL 校验等问题时使用。 */
+    skipProbe?: boolean;
+}
+
+// 加载初始配置优先级：持久化 data/settings.yaml > config/settings.yaml > .env
+const dataSettingsPath = path.resolve(__dirname, "..", "data", "settings.yaml");
+const dataSettings = loadNetworkSettings(dataSettingsPath);
+const fallbackEndpoints = loadEndpointsFromSettings();
+const initialEndpoints = dataSettings.endpoints.length > 0 ? dataSettings.endpoints : fallbackEndpoints;
+const initialNetwork = resolveNetwork(dataSettings.network || process.env.ENDLESS_NETWORK);
 
 // 创建 failover 客户端（管理多端点切换、主节点探活、指数退避）
-const failoverClient = new FailoverEndlessClient(_endpoints, _network, {
-    name: "Endless RPC",
-    maxRetries: Number(process.env.RPC_MAX_RETRIES_PER_ENDPOINT ?? 3),
-    baseDelayMs: Number(process.env.RPC_RETRY_BASE_DELAY_MS ?? 1000),
-    recoverySuccessCount: Number(process.env.RPC_PRIMARY_RECOVERY_SUCCESS_COUNT ?? 5),
-    probeTimeoutMs: Number(process.env.RPC_PRIMARY_PROBE_TIMEOUT_MS ?? 10000),
-});
+let failoverClient = new FailoverEndlessClient(initialEndpoints, initialNetwork, buildFailoverOptions());
 
 // endless 代理：所有 endless.xxx 调用都委托给当前活跃端点的 Endless 实例。
-// failoverClient.execute() 会在调用操作前设置 activeIdx，使代理指向正确实例。
+// failoverClient 变量在运行时可被重新赋值，Proxy 闭包会自动读取最新实例。
 const endless = new Proxy({} as Endless, {
     get(_target, prop) {
         const active = failoverClient.getActiveEndless();
@@ -105,13 +164,76 @@ const endless = new Proxy({} as Endless, {
     }
 });
 
-// 保留 endlessConfig 用于导出（向后兼容）
-const endlessConfig = new EndlessConfig({
-    network: _network,
+// 保留 endlessConfig 用于导出（向后兼容），运行时可重新赋值
+let endlessConfig = new EndlessConfig({
+    network: initialNetwork,
     fullnode: failoverClient.activeUrl,
 } as any);
 
-console.log(`[Init] Network=${process.env.ENDLESS_NETWORK || "devnet"} | Failover 端点数: ${failoverClient.endpointCount} | 活跃: ${failoverClient.activeUrl}`);
+export function getCurrentNetworkConfig(): NetworkConfig {
+    return {
+        network: networkNameFromEnum(failoverClient.getNetwork()),
+        activeUrl: failoverClient.activeUrl,
+        endpoints: failoverClient.getEndpoints(),
+    };
+}
+
+export async function switchNetwork(input: SwitchNetworkInput): Promise<NetworkConfig> {
+    const requestedNetworkName = (input.network || "devnet").toLowerCase();
+    const network = resolveNetwork(requestedNetworkName);
+
+    let endpoints: EndpointConfig[];
+    if (input.endpoints && input.endpoints.length > 0) {
+        endpoints = input.endpoints.map((ep) => ({
+            url: ep.url,
+            priority: ep.priority ?? 1,
+            chain_id: ep.chain_id,
+        }));
+    } else if (input.url) {
+        endpoints = [{ url: input.url, priority: 1 }];
+    } else {
+        const defaultUrl = DEFAULT_NETWORK_URLS[requestedNetworkName];
+        if (!defaultUrl) {
+            throw new EndlessAPIError(
+                ErrorCode.CONFIGURATION_ERROR,
+                `切换 ${requestedNetworkName} 失败：未提供 url 或 endpoints，且该网络没有内置默认 RPC`,
+            );
+        }
+        endpoints = [{ url: defaultUrl, priority: 1 }];
+    }
+
+    // 先探活新端点（除非指定 skipProbe），然后确定最终客户端
+    let newClient: FailoverEndlessClient;
+    if (!input.skipProbe) {
+        newClient = new FailoverEndlessClient(endpoints, network, buildFailoverOptions());
+        try {
+            await newClient.execute(async (activeEndless) => {
+                await activeEndless.getLedgerInfo();
+            }, "switchNetworkProbe");
+        } catch (e) {
+            throw new EndlessAPIError(
+                ErrorCode.CONFIGURATION_ERROR,
+                `新网络 ${requestedNetworkName} 探活失败，未执行切换：${e instanceof Error ? e.message : String(e)}`,
+            );
+        }
+    } else {
+        newClient = new FailoverEndlessClient(endpoints, network, buildFailoverOptions());
+    }
+
+    // 探活通过（或跳过），更新运行时状态
+    failoverClient = newClient;
+    endlessConfig = new EndlessConfig({
+        network: failoverClient.getNetwork(),
+        fullnode: failoverClient.activeUrl,
+    } as any);
+
+    persistNetworkSettings(network, endpoints);
+    console.log(`[Network] 已切换至 ${requestedNetworkName} | 活跃: ${failoverClient.activeUrl}`);
+
+    return getCurrentNetworkConfig();
+}
+
+console.log(`[Init] Network=${networkNameFromEnum(initialNetwork)} | Failover 端点数: ${failoverClient.endpointCount} | 活跃: ${failoverClient.activeUrl}`);
 if (process.env.ENDLESS_INDEXER_URL) {
     console.log(`[Init] Indexer=${process.env.ENDLESS_INDEXER_URL}`);
 }
@@ -1068,13 +1190,14 @@ export async function queryEvents(
 // ============================================================================
 
 export async function checkRpcHealth() {
-    const base = process.env.ENDLESS_NETWORK_URL || "<unset>";
+    const cfg = getCurrentNetworkConfig();
     try {
         return await withFailover("checkRpcHealth", async () => {
             const ledger = await endless.getLedgerInfo();
             return {
                 ok: true,
-                base,
+                network: cfg.network,
+                base: cfg.activeUrl,
                 chainId: ledger.chain_id,
                 epoch: ledger.epoch,
                 ledgerVersion: ledger.ledger_version,
@@ -1086,7 +1209,8 @@ export async function checkRpcHealth() {
         const apiError = ErrorHandler.fromError(error, 'RPC 健康检查失败');
         return {
             ok: false,
-            base,
+            network: cfg.network,
+            base: cfg.activeUrl,
             error: error instanceof Error ? error.message : String(error),
             errorCode: apiError.code,
             errorType: apiError.name,

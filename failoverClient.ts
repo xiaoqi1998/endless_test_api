@@ -20,7 +20,7 @@ import { EndlessAPIError, ErrorHandler, ErrorCode } from "./errorDefinitions";
 // 类型
 // ---------------------------------------------------------------------------
 
-interface EndpointConfig {
+export interface EndpointConfig {
     url: string;
     priority?: number;
     chain_id?: string | number;
@@ -95,6 +95,14 @@ export class FailoverEndlessClient {
 
     get endpointCount(): number {
         return this.endpoints.length;
+    }
+
+    getNetwork(): Network {
+        return this.network;
+    }
+
+    getEndpoints(): EndpointConfig[] {
+        return this.endpoints;
     }
 
     /**
@@ -315,6 +323,38 @@ export class FailoverEndlessClient {
 // ---------------------------------------------------------------------------
 // 从 settings.yaml 加载端点配置
 // ---------------------------------------------------------------------------
+
+export interface NetworkSettings {
+    network?: string;
+    endpoints: EndpointConfig[];
+}
+
+/**
+ * 从指定 settings.yaml 读取网络名称与端点列表。
+ * 若未指定路径，默认读取项目根目录 config/settings.yaml。
+ * 读取失败或文件不存在时返回空 endpoints，便于调用方决定回退策略。
+ */
+export function loadNetworkSettings(settingsPath?: string): NetworkSettings {
+    const targetPath = settingsPath ?? path.resolve(__dirname, "..", "config", "settings.yaml");
+    try {
+        if (fs.existsSync(targetPath)) {
+            const content = fs.readFileSync(targetPath, "utf-8");
+            const doc: any = yaml.load(content);
+            const endpoints: any[] = doc?.rpc?.endless?.endpoints ?? [];
+            const resolved = endpoints
+                .map((ep: any) => ({
+                    url: expandEnvVars(ep.url),
+                    priority: ep.priority ?? 99,
+                    chain_id: ep.chain_id !== undefined ? expandEnvVars(String(ep.chain_id)) : undefined,
+                }))
+                .filter((ep: EndpointConfig) => ep.url);
+            return { network: doc?.network, endpoints: resolved };
+        }
+    } catch (e) {
+        console.warn(`[Failover] 读取 ${targetPath} 失败: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    return { endpoints: [] };
+}
 
 /**
  * 从项目根目录 config/settings.yaml 读取 endless RPC 端点列表。

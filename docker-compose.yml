@@ -1,0 +1,17 @@
+services:
+  endless-test-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: endless-test-api
+    restart: unless-stopped
+    ports:
+      - "${ENDLESS_SIDECAR_PORT:-3001}:3001"
+    environment:
+      - ENDLESS_NETWORK=${ENDLESS_NETWORK:-devnet}
+      - ENDLESS_NETWORK_URL=${ENDLESS_NETWORK_URL:-https://api.devnet.endlesslabs.com/v1}
+      - SIGNER_PRIVATE_KEY=${SIGNER_PRIVATE_KEY:-}
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      - ENDLESS_SIDECAR_PORT=3001
+    volumes:
+      - ./data:/app/data

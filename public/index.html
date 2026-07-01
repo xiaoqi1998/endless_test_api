@@ -1,0 +1,1910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0a0e1a" />
+<title>Endless Chain API 调试控制台</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" media="print" onload="this.media='all'" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+<style>
+:root {
+  --bg: #0a0e1a;
+  --bg-2: #0d1220;
+  --card: #131826;
+  --card-2: #1a2033;
+  --border: #222a40;
+  --border-soft: #1a2033;
+  --text: #e6ecff;
+  --text-2: #9aa5c7;
+  --text-3: #6b769a;
+  --neon: #7c5cff;
+  --neon-2: #22d3ee;
+  --neon-glow: rgba(124, 92, 255, .45);
+  --cyan-glow: rgba(34, 211, 238, .35);
+  --success: #34d399;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --get: #34d399;
+  --post: #a78bfa;
+  --radius: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,.4);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a3454; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4670; }
+
+/* Topbar */
+.topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(13,18,32,.95);
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: .3px; flex-shrink: 0; }
+.brand .logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--neon), var(--neon-2)); display: grid; place-items: center; font-size: 14px; }
+.brand small { color: var(--text-3); font-weight: 500; font-size: 11px; margin-left: 4px; }
+
+.topbar-tabs { display: flex; gap: 4px; margin-left: 8px; }
+.tab-btn {
+  background: transparent; border: 1px solid transparent; color: var(--text-2);
+  padding: 7px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 13px;
+  font-weight: 500; transition: all .15s; white-space: nowrap;
+}
+.tab-btn:hover { color: var(--text); background: rgba(124,92,255,.08); }
+.tab-btn.active { color: var(--text); background: rgba(124,92,255,.15); border-color: rgba(124,92,255,.35); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.field-base {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 5px 10px; transition: border-color .15s, box-shadow .15s;
+}
+.field-base:focus-within { border-color: var(--neon); box-shadow: 0 0 0 2px rgba(124,92,255,.12); }
+.field-base label { font-size: 11px; color: var(--text-3); font-weight: 600; letter-spacing: .5px; }
+.field-base input, .field-base select {
+  background: transparent; border: none; outline: none; color: var(--text); font-family: inherit; font-size: 13px;
+}
+.field-base input { width: 180px; }
+.field-base select { cursor: pointer; }
+.field-base select option { background: var(--card); }
+
+.health-lamp {
+  display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2);
+  padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--card); flex-shrink: 0;
+}
+.lamp-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); transition: all .3s; }
+.lamp-dot.ok { background: var(--success); animation: pulse 2s infinite; }
+.lamp-dot.fail { background: var(--error); box-shadow: 0 0 6px rgba(248,113,113,.5); }
+.lamp-dot.checking { background: var(--warning); animation: pulse 1s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,.4); } 70% { box-shadow: 0 0 0 7px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
+
+.mobile-menu-btn { display: none; background: transparent; border: none; color: var(--text); font-size: 20px; padding: 4px 8px; cursor: pointer; }
+
+/* Main */
+.main { height: calc(100vh - 56px); position: relative; z-index: 1; overflow: hidden; }
+.view { display: none; height: 100%; overflow: hidden; }
+.view.active { display: block; }
+
+/* Console view */
+.console-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(360px, 1.2fr) minmax(360px, 1fr);
+  height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+  border-right: 1px solid var(--border); background: var(--bg-2);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sidebar-header { padding: 12px; border-bottom: 1px solid var(--border-soft); }
+.sidebar-search {
+  width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+}
+.sidebar-search:focus { border-color: var(--neon); }
+.sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+.ep-group { margin-bottom: 4px; }
+.ep-group-title {
+  padding: 8px 14px 6px; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: var(--text-3); text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+}
+.ep-group-title::before { content: ""; width: 3px; height: 10px; background: var(--neon); border-radius: 2px; opacity: .6; }
+.ep-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer;
+  border-left: 2px solid transparent; transition: all .12s; font-size: 13px;
+}
+.ep-item:hover { background: rgba(124,92,255,.06); border-left-color: rgba(124,92,255,.4); }
+.ep-item.active { background: rgba(124,92,255,.12); border-left-color: var(--neon); }
+.ep-item .method {
+  font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 3px; letter-spacing: .5px;
+  font-family: var(--font-mono); min-width: 34px; text-align: center;
+}
+.method.GET { background: rgba(52,211,153,.15); color: var(--get); }
+.method.POST { background: rgba(167,139,250,.15); color: var(--post); }
+.ep-item .path { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ep-item.active .path { color: var(--text); }
+.ep-item .summary { display: none; }
+
+/* Form panel */
+.form-panel {
+  border-right: 1px solid var(--border); background: var(--bg);
+  display: flex; flex-direction: column; overflow: hidden; min-width: 0;
+}
+.form-head { padding: 16px 18px; border-bottom: 1px solid var(--border-soft); }
+.form-head h2 { font-size: 16px; font-weight: 600; letter-spacing: .2px; margin-bottom: 4px; }
+.form-head .summary { color: var(--text-3); font-size: 12px; }
+.form-head .path-display {
+  margin-top: 10px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap;
+}
+.form-head .path-display .method { font-size: 10px; }
+.form-head .path-display .url { color: var(--text-2); word-break: break-all; flex: 1; font-family: var(--font-mono); }
+.form-head .path-display .url .param { color: var(--neon-2); }
+
+.form-body { flex: 1; overflow-y: auto; padding: 16px 18px; }
+.form-section { margin-bottom: 18px; }
+.form-section-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px; color: var(--text-3);
+  text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.form-section-title::before { content: ""; width: 3px; height: 10px; background: var(--neon-2); border-radius: 2px; opacity: .6; }
+
+.field { margin-bottom: 12px; }
+.field-label { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; font-size: 12px; color: var(--text-2); }
+.field-label .req { color: var(--error); font-size: 10px; }
+.field-label .opt { color: var(--text-3); font-size: 10px; font-style: italic; }
+.field-input { position: relative; display: flex; align-items: center; }
+.field-input input, .field-input textarea, .field-input select {
+  width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.field-input input:focus, .field-input textarea:focus, .field-input select:focus { border-color: var(--neon); box-shadow: 0 0 0 2px rgba(124,92,255,.1); }
+.field-input input.error, .field-input textarea.error, .field-input select.error { border-color: var(--error); background: rgba(248,113,113,.06); }
+.field-input textarea { min-height: 80px; resize: vertical; font-family: var(--font-mono); line-height: 1.6; }
+.field-input input.pkey { padding-right: 36px; font-family: var(--font-mono); }
+.field-input .toggle-eye {
+  position: absolute; right: 8px; background: transparent; border: none; cursor: pointer;
+  color: var(--text-3); padding: 4px; font-size: 14px;
+}
+.field-input .toggle-eye:hover { color: var(--text); }
+.field-hint { font-size: 11px; color: var(--text-3); margin-top: 4px; line-height: 1.4; }
+.field-error { font-size: 11px; color: var(--error); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.field-error::before { content: "⚠"; }
+
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.preset-chip {
+  background: rgba(34,211,238,.08); border: 1px solid rgba(34,211,238,.3); color: var(--neon-2);
+  padding: 5px 10px; border-radius: 12px; cursor: pointer; font-size: 11px; font-family: inherit;
+  transition: all .15s; white-space: nowrap;
+}
+.preset-chip:hover { background: rgba(34,211,238,.18); box-shadow: 0 0 6px var(--cyan-glow); }
+
+.json-editor { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); position: relative; transition: border-color .15s; }
+.json-editor:focus-within { border-color: var(--neon); box-shadow: 0 0 0 2px rgba(124,92,255,.1); }
+.json-editor.error { border-color: var(--error); }
+.json-editor textarea {
+  width: 100%; background: transparent; border: none; outline: none; color: var(--text);
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.6; padding: 12px;
+  min-height: 200px; resize: vertical; border-radius: var(--radius);
+}
+.json-editor .toolbar {
+  display: flex; gap: 6px; padding: 6px 8px; border-top: 1px solid var(--border-soft); background: rgba(0,0,0,.2); flex-wrap: wrap;
+}
+.json-editor .toolbar button {
+  background: transparent; border: 1px solid var(--border); color: var(--text-2);
+  padding: 4px 8px; border-radius: 5px; cursor: pointer; font-family: inherit; font-size: 11px;
+  transition: all .15s;
+}
+.json-editor .toolbar button:hover { color: var(--text); border-color: var(--neon); background: rgba(124,92,255,.1); }
+
+.array-field { display: flex; flex-direction: column; gap: 6px; }
+.array-item { display: flex; gap: 6px; align-items: center; }
+.array-item input { flex: 1; }
+.array-item button {
+  background: transparent; border: 1px solid var(--border); color: var(--text-3); border-radius: 6px;
+  width: 28px; height: 28px; cursor: pointer; display: grid; place-items: center; font-size: 16px;
+}
+.array-item button:hover { color: var(--error); border-color: var(--error); }
+.btn-add-array {
+  background: transparent; border: 1px dashed var(--border); color: var(--text-2); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; font-size: 12px; width: fit-content; margin-top: 4px;
+}
+.btn-add-array:hover { border-color: var(--neon); color: var(--text); }
+
+.form-actions {
+  padding: 12px 18px; border-top: 1px solid var(--border-soft); display: flex; gap: 10px; background: var(--bg-2); flex-wrap: wrap;
+}
+.btn {
+  background: var(--neon); color: #fff; border: none; border-radius: 8px; padding: 9px 16px;
+  font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.btn:hover { background: #8f71ff; box-shadow: 0 0 16px var(--neon-glow); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--text-2); }
+.btn.secondary:hover { border-color: var(--neon); color: var(--text); background: rgba(124,92,255,.08); box-shadow: none; }
+.btn.ghost { background: transparent; color: var(--text-3); }
+.btn.ghost:hover { color: var(--text); }
+
+/* Response panel */
+.response-panel { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); min-width: 0; }
+.resp-head { padding: 12px 18px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.status-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; letter-spacing: .5px;
+  font-family: var(--font-mono);
+}
+.status-badge.idle { background: rgba(107,118,154,.15); color: var(--text-3); }
+.status-badge.success { background: rgba(52,211,153,.15); color: var(--success); border: 1px solid rgba(52,211,153,.3); }
+.status-badge.error { background: rgba(248,113,113,.15); color: var(--error); border: 1px solid rgba(248,113,113,.3); }
+.status-badge.loading { background: rgba(251,191,36,.15); color: var(--warning); }
+.resp-meta { font-size: 12px; color: var(--text-3); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.resp-meta span { display: flex; align-items: center; gap: 5px; }
+.resp-tabs { display: flex; margin-left: auto; gap: 2px; background: var(--card); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+.resp-tab {
+  background: transparent; border: none; color: var(--text-3); padding: 5px 12px; border-radius: 5px;
+  cursor: pointer; font-family: inherit; font-size: 12px; font-weight: 500; transition: all .15s;
+}
+.resp-tab.active { background: rgba(124,92,255,.2); color: var(--text); }
+.resp-tab:hover:not(.active) { color: var(--text-2); }
+
+.resp-body { flex: 1; overflow: auto; padding: 16px 18px; }
+.resp-empty {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: var(--text-3); text-align: center; gap: 12px;
+}
+.resp-empty .icon { font-size: 36px; opacity: .4; }
+.resp-empty .title { font-size: 15px; color: var(--text-2); font-weight: 600; }
+.resp-empty .hint { font-size: 12px; max-width: 280px; line-height: 1.6; }
+
+pre.json-block {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.6; overflow: auto;
+  white-space: pre-wrap; word-break: break-word;
+}
+pre.json-block .hljs { background: transparent; padding: 0; }
+.curl-block {
+  background: #000; border: 1px solid var(--border); border-radius: var(--radius); padding: 14px;
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.6; overflow: auto;
+  color: #a0e0a0; white-space: pre-wrap; word-break: break-all;
+}
+.headers-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.headers-table th, .headers-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+.headers-table th { color: var(--text-3); font-weight: 600; }
+.headers-table td { color: var(--text-2); font-family: var(--font-mono); }
+
+.error-card {
+  background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.35); border-radius: var(--radius);
+  padding: 14px; margin-bottom: 12px;
+}
+.error-card .ec-code { font-family: var(--font-mono); font-weight: 700; color: var(--error); font-size: 13px; }
+.error-card .ec-msg { color: var(--text); font-size: 13px; margin-top: 4px; }
+.error-card .ec-details { margin-top: 10px; }
+.error-card .ec-details summary { color: var(--neon-2); font-size: 12px; cursor: pointer; user-select: none; }
+.error-card .ec-details pre { margin-top: 8px; background: rgba(0,0,0,.25); }
+.error-card .ec-link { color: var(--neon-2); font-size: 12px; cursor: pointer; text-decoration: underline; margin-top: 8px; display: inline-block; }
+
+.resp-actions { padding: 10px 18px; border-top: 1px solid var(--border-soft); display: flex; gap: 8px; background: var(--bg-2); }
+
+/* History drawer */
+.history-toggle {
+  position: fixed; right: 18px; bottom: 18px; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--neon); color: #fff; border: none; cursor: pointer; font-size: 18px;
+  box-shadow: 0 6px 18px var(--neon-glow); z-index: 50; transition: transform .15s; display: grid; place-items: center;
+}
+.history-toggle:hover { transform: scale(1.08); }
+.history-toggle .badge {
+  position: absolute; top: -2px; right: -2px; background: var(--error); color: #fff; font-size: 10px;
+  min-width: 18px; height: 18px; border-radius: 9px; display: grid; place-items: center; padding: 0 5px;
+}
+.history-drawer {
+  position: fixed; top: 56px; right: 0; bottom: 0; width: 360px; background: var(--bg-2);
+  border-left: 1px solid var(--border); box-shadow: -8px 0 32px rgba(0,0,0,.4);
+  transform: translateX(100%); transition: transform .22s; z-index: 40; display: flex; flex-direction: column;
+}
+.history-drawer.open { transform: translateX(0); }
+.history-head { padding: 14px 16px; border-bottom: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between; }
+.history-head h3 { font-size: 14px; font-weight: 600; }
+.history-list { flex: 1; overflow-y: auto; padding: 8px; }
+.history-item {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px;
+  margin-bottom: 8px; cursor: pointer; transition: all .12s;
+}
+.history-item:hover { border-color: var(--neon); background: var(--card-2); }
+.history-item .hi-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.history-item .hi-time { color: var(--text-3); font-size: 10px; margin-left: auto; }
+.history-item .hi-path { color: var(--text-2); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-item .hi-status { font-size: 11px; font-weight: 700; }
+.history-item .hi-status.s2 { color: var(--success); }
+.history-item .hi-status.s4 { color: var(--warning); }
+.history-item .hi-status.s5 { color: var(--error); }
+.history-item .hi-replay { font-size: 11px; color: var(--neon-2); margin-top: 6px; }
+
+/* Docs view */
+.docs-view { padding: 20px; height: 100%; overflow-y: auto; }
+.docs-head { margin-bottom: 20px; max-width: 900px; }
+.docs-head h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.docs-head p { color: var(--text-3); font-size: 13px; line-height: 1.6; }
+.docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; max-width: 1400px; }
+.doc-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;
+  transition: all .15s; cursor: pointer;
+}
+.doc-card:hover { border-color: var(--neon); transform: translateY(-2px); box-shadow: var(--shadow); }
+.doc-card .doc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.doc-card .doc-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.doc-card .doc-path { font-family: var(--font-mono); font-size: 12px; color: var(--neon-2); margin-bottom: 8px; }
+.doc-card .doc-summary { font-size: 12px; color: var(--text-2); line-height: 1.5; margin-bottom: 12px; }
+.doc-card .doc-params { font-size: 11px; color: var(--text-3); }
+.doc-card .doc-params strong { color: var(--text); }
+
+/* SDK view */
+.sdk-view { height: 100%; }
+.sdk-layout { display: grid; grid-template-columns: 260px minmax(340px, 1fr) minmax(340px, 1fr); height: 100%; }
+.sdk-sidebar { border-right: 1px solid var(--border); background: var(--bg-2); display: flex; flex-direction: column; overflow: hidden; }
+.sdk-main { border-right: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; overflow: hidden; }
+.sdk-result { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.sdk-group-title {
+  padding: 8px 14px 6px; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  color: var(--text-3); text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+}
+.sdk-group-title::before { content: ""; width: 3px; height: 10px; background: var(--neon-2); border-radius: 2px; opacity: .6; }
+.sdk-method-item {
+  padding: 8px 14px; cursor: pointer; border-left: 2px solid transparent; transition: all .12s;
+}
+.sdk-method-item:hover { background: rgba(124,92,255,.06); border-left-color: rgba(124,92,255,.4); }
+.sdk-method-item.active { background: rgba(124,92,255,.12); border-left-color: var(--neon); }
+.sdk-method-item .mname { font-family: var(--font-mono); font-size: 13px; color: var(--text-2); font-weight: 500; }
+.sdk-method-item.active .mname { color: var(--text); }
+.sdk-method-item .mname .dot { color: var(--neon-2); margin-right: 4px; }
+.sdk-method-item .mdesc { font-size: 11px; color: var(--text-3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Errors view */
+.errors-view { padding: 20px; height: 100%; overflow-y: auto; }
+.errors-search {
+  max-width: 400px; background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; color: var(--text); font-family: inherit; font-size: 13px; outline: none; margin-bottom: 18px; width: 100%;
+}
+.errors-search:focus { border-color: var(--neon); }
+.err-group { margin-bottom: 20px; }
+.err-group-title {
+  font-size: 13px; font-weight: 600; color: var(--text); padding: 8px 12px; background: rgba(124,92,255,.08);
+  border-left: 3px solid var(--neon); border-radius: 0 6px 6px 0; margin-bottom: 8px;
+}
+.err-table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; font-size: 12px; }
+.err-table th, .err-table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border-soft); }
+.err-table th { background: rgba(0,0,0,.2); color: var(--text-3); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: .5px; }
+.err-table tr:last-child td { border-bottom: none; }
+.err-table .code { color: var(--neon-2); font-weight: 600; font-family: var(--font-mono); }
+.err-table .name { color: var(--text); font-family: var(--font-mono); }
+.err-table .http { font-family: var(--font-mono); }
+.err-table .http.h2 { color: var(--success); }
+.err-table .http.h4 { color: var(--warning); }
+.err-table .http.h5 { color: var(--error); }
+
+/* Toast */
+.toast {
+  position: fixed; top: 72px; right: 18px; background: var(--card); border: 1px solid var(--neon);
+  color: var(--text); padding: 10px 16px; border-radius: var(--radius); font-size: 13px; z-index: 100;
+  box-shadow: var(--shadow); opacity: 0; transform: translateX(20px); transition: all .22s; pointer-events: none; max-width: 320px;
+}
+.toast.show { opacity: 1; transform: translateX(0); }
+.toast.error { border-color: var(--error); }
+.toast.success { border-color: var(--success); }
+
+/* Empty / helper */
+.helper-banner {
+  background: rgba(124,92,255,.08); border: 1px solid rgba(124,92,255,.25); border-radius: var(--radius);
+  padding: 10px 14px; margin-bottom: 16px; font-size: 12px; color: var(--text-2); display: flex; align-items: center; gap: 10px;
+}
+.helper-banner kbd { background: var(--card); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; border: 1px solid var(--border); }
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .console-layout { grid-template-columns: 220px minmax(320px, 1fr) minmax(320px, 1fr); }
+  .sdk-layout { grid-template-columns: 220px minmax(300px, 1fr) minmax(300px, 1fr); }
+  .field-base input { width: 140px; }
+}
+
+@media (max-width: 1024px) {
+  .topbar-right { display: none; }
+  .mobile-menu-btn { display: block; }
+  .topbar-tabs { display: none; position: absolute; top: 56px; left: 0; right: 0; background: var(--bg-2); border-bottom: 1px solid var(--border); padding: 8px; flex-direction: column; z-index: 25; }
+  .topbar-tabs.open { display: flex; }
+  .tab-btn { width: 100%; text-align: left; }
+
+  .console-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+  .sidebar { max-height: 180px; border-right: none; border-bottom: 1px solid var(--border); }
+  .form-panel { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
+  .response-panel { max-height: 50vh; }
+
+  .sdk-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr 1fr; }
+  .sdk-sidebar { max-height: 160px; border-right: none; border-bottom: 1px solid var(--border); }
+  .sdk-main { border-right: none; border-bottom: 1px solid var(--border); max-height: 50vh; }
+  .sdk-result { max-height: 50vh; }
+
+  .history-drawer { width: 100%; }
+  .docs-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .brand small { display: none; }
+  .form-actions { flex-direction: column; }
+  .form-actions .btn { width: 100%; }
+  .resp-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .resp-tabs { margin-left: 0; }
+  .resp-meta { width: 100%; justify-content: space-between; }
+}
+
+/* Loading skeleton */
+.skeleton { background: linear-gradient(90deg, var(--card) 25%, var(--card-2) 50%, var(--card) 75%); background-size: 200% 100%; animation: skeleton 1.2s infinite; border-radius: 4px; }
+@keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="logo">∞</div>
+    <span>Endless</span><small>API Console</small>
+  </div>
+
+  <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="菜单">☰</button>
+  <nav class="topbar-tabs" id="topbarTabs">
+    <button class="tab-btn active" data-view="console">调试控制台</button>
+    <button class="tab-btn" data-view="docs">接口文档</button>
+    <button class="tab-btn" data-view="sdk">SDK 调用</button>
+    <button class="tab-btn" data-view="errors">错误码字典</button>
+  </nav>
+
+  <div class="topbar-right">
+    <div class="field-base">
+      <label>BASE</label>
+      <input id="baseUrl" value="http://localhost:3001" spellcheck="false" aria-label="Base URL" />
+    </div>
+    <div class="field-base">
+      <label>NET</label>
+      <select id="networkPreset" aria-label="Network preset">
+        <option value="mainnet">Mainnet</option>
+        <option value="testnet">Testnet (221)</option>
+        <option value="devnet" selected>Devnet (220)</option>
+        <option value="local">Local</option>
+      </select>
+    </div>
+    <div class="field-base" id="adminTokenWrap">
+      <label>TOKEN</label>
+      <input id="adminToken" type="password" placeholder="ADMIN_TOKEN" spellcheck="false" aria-label="Admin token" />
+    </div>
+    <div class="health-lamp" id="networkStatus" title="当前后端网络">
+      <span id="lampDot" class="lamp-dot"></span>
+      <span id="lampText">检测中…</span>
+    </div>
+  </div>
+</header>
+
+<div class="main" id="main">
+
+  <!-- Console View -->
+  <div class="view active" id="view-console">
+    <div class="console-layout">
+      <aside class="sidebar" id="consoleSidebar">
+        <div class="sidebar-header">
+          <input id="epSearch" class="sidebar-search" placeholder="搜索端点..." spellcheck="false" aria-label="搜索端点" />
+        </div>
+        <div class="sidebar-list" id="epList"></div>
+      </aside>
+
+      <section class="form-panel">
+        <div class="form-head" id="formHead">
+          <div class="title-row"><h2 id="epTitle">选择一个端点</h2></div>
+          <div class="summary" id="epSummary">从左侧列表选择 API，或切换到「接口文档」浏览全部能力。</div>
+          <div class="path-display" id="pathDisplay" style="display:none">
+            <span class="method" id="pathMethod">GET</span>
+            <span class="url" id="pathUrl"></span>
+          </div>
+        </div>
+
+        <div class="form-body" id="formBody">
+          <div class="resp-empty">
+            <div class="icon">⌬</div>
+            <div class="title">尚未选择端点</div>
+            <div class="hint">点击左侧任意端点自动生成参数表单；GET 端点使用查询参数，POST 端点使用 JSON 请求体。</div>
+          </div>
+        </div>
+
+        <div class="form-actions" id="formActions" style="display:none">
+          <button class="btn" id="sendBtn">发送请求</button>
+          <button class="btn secondary" id="resetBtn">重置</button>
+          <button class="btn ghost" id="copyCurlBtn">复制 curl</button>
+        </div>
+      </section>
+
+      <section class="response-panel">
+        <div class="resp-head">
+          <span class="status-badge idle" id="statusBadge">IDLE</span>
+          <div class="resp-meta">
+            <span id="metaStatus">—</span>
+            <span id="metaDuration">—</span>
+            <span id="metaSize">—</span>
+          </div>
+          <div class="resp-tabs">
+            <button class="resp-tab active" data-tab="json">JSON</button>
+            <button class="resp-tab" data-tab="curl">curl</button>
+            <button class="resp-tab" data-tab="headers">Headers</button>
+            <button class="resp-tab" data-tab="raw">Raw</button>
+          </div>
+        </div>
+        <div class="resp-body" id="respBody">
+          <div class="resp-empty">
+            <div class="icon">↳</div>
+            <div class="title">等待响应</div>
+            <div class="hint">发送请求后，此处会显示格式化 JSON、HTTP 状态与耗时。失败时自动高亮错误码。</div>
+          </div>
+        </div>
+        <div class="resp-actions">
+          <button class="btn secondary" id="copyRespBtn">复制响应</button>
+          <button class="btn ghost" id="clearRespBtn">清空</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Docs View -->
+  <div class="view" id="view-docs">
+    <div class="docs-view">
+      <div class="docs-head">
+        <h2>接口文档</h2>
+        <p>按功能分组浏览全部 RESTful 端点。点击卡片可跳转到调试控制台并自动填充路径。</p>
+      </div>
+      <div id="docsGrid" class="docs-grid"></div>
+    </div>
+  </div>
+
+  <!-- SDK View -->
+  <div class="view" id="view-sdk">
+    <div class="sdk-view">
+      <div class="sdk-layout">
+        <aside class="sdk-sidebar">
+          <div class="sidebar-header">
+            <input id="sdkSearch" class="sidebar-search" placeholder="搜索 SDK 方法..." spellcheck="false" aria-label="搜索 SDK 方法" />
+          </div>
+          <div class="sidebar-list" id="sdkList"></div>
+        </aside>
+
+        <section class="sdk-main">
+          <div class="form-head">
+            <div class="title-row"><h2 id="sdkMethodTitle">选择方法</h2></div>
+            <div class="summary" id="sdkMethodDesc">从左侧选择 EndlessClient 方法，填入参数即可调用。</div>
+            <div class="path-display" id="sdkSigWrap" style="display:none">
+              <span class="method GET" style="background:rgba(34,211,238,.15);color:var(--neon-2)">SDK</span>
+              <span class="url" id="sdkSignature"></span>
+            </div>
+          </div>
+          <div class="form-body" id="sdkFormBody">
+            <div class="resp-empty">
+              <div class="icon">⚡</div>
+              <div class="title">尚未选择方法</div>
+              <div class="hint">左侧列出全部 SDK 方法，选择后自动生成参数表单。</div>
+            </div>
+          </div>
+          <div class="form-actions" id="sdkFormActions" style="display:none">
+            <button class="btn" id="sdkCallBtn">调用</button>
+            <button class="btn secondary" id="sdkResetBtn">重置</button>
+            <button class="btn ghost" id="sdkCopyCall">复制调用代码</button>
+          </div>
+        </section>
+
+        <section class="sdk-result">
+          <div class="resp-head">
+            <span class="status-badge idle" id="sdkStatus">IDLE</span>
+            <div class="resp-meta"><span id="sdkMeta">—</span></div>
+          </div>
+          <div class="resp-body" id="sdkRespBody">
+            <div class="resp-empty">
+              <div class="icon">↳</div>
+              <div class="title">等待结果</div>
+              <div class="hint">调用结果会在此处格式化显示。</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Errors View -->
+  <div class="view" id="view-errors">
+    <div class="errors-view">
+      <div class="docs-head">
+        <h2>错误码字典</h2>
+        <p>后端统一返回 <code style="color:var(--neon-2)">{ error: { code, message, type, details, timestamp } }</code>。下表列出全部错误码、HTTP 状态与处理建议。</p>
+      </div>
+      <input id="errSearch" class="errors-search" placeholder="搜索错误码或关键字..." spellcheck="false" aria-label="搜索错误码" />
+      <div id="errDict"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- History drawer -->
+<button class="history-toggle" id="histToggle" title="历史记录" aria-label="历史记录">🕘<span class="badge" id="histBadge" style="display:none">0</span></button>
+<aside class="history-drawer" id="histDrawer">
+  <div class="history-head">
+    <h3>请求历史</h3>
+    <button class="btn ghost" id="histClear">清空</button>
+  </div>
+  <div class="history-list" id="histList">
+    <div style="text-align:center;color:var(--text-3);padding:40px 0;font-size:12px">暂无历史记录</div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+ *  EndlessClient SDK — 封装 endless_test_api 全部端点
+ * ========================================================================= */
+class EndlessAPIError extends Error {
+  constructor(code, message, details, httpStatus) {
+    super(message);
+    this.name = 'EndlessAPIError';
+    this.code = code;
+    this.details = details;
+    this.httpStatus = httpStatus;
+  }
+}
+
+class EndlessClient {
+  constructor(baseUrl = 'http://localhost:3001') {
+    this.baseUrl = baseUrl.replace(/\/+$/, '');
+    this.adminToken = '';
+  }
+
+  async _request(method, path, { query, body, admin } = {}) {
+    let url = this.baseUrl + path;
+    if (query && Object.keys(query).length) {
+      const qs = new URLSearchParams();
+      for (const [k, v] of Object.entries(query)) {
+        if (v === undefined || v === null || v === '') continue;
+        qs.append(k, typeof v === 'string' ? v : JSON.stringify(v));
+      }
+      const s = qs.toString();
+      if (s) url += (url.includes('?') ? '&' : '?') + s;
+    }
+    const opts = { method, headers: {} };
+    if (this.adminToken) opts.headers['Authorization'] = `Bearer ${this.adminToken}`;
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
+    let resp;
+    const t0 = performance.now();
+    try {
+      resp = await fetch(url, opts);
+    } catch (e) {
+      throw new EndlessAPIError(1002, '网络连接错误：' + e.message, { url }, 0);
+    }
+    const text = await resp.text();
+    let json = null;
+    try { json = JSON.parse(text); } catch (_) {}
+    if (!resp.ok) {
+      const err = json && json.error ? json.error : {};
+      throw new EndlessAPIError(err.code || resp.status, err.message || ('HTTP ' + resp.status), err.details || null, resp.status);
+    }
+    return { data: json === null ? text : json, status: resp.status, durationMs: Math.round(performance.now() - t0), headers: Object.fromEntries(resp.headers.entries()) };
+  }
+
+  // 系统
+  health() { return this._request('GET', '/api/health').then(r => r.data); }
+  ledger() { return this._request('GET', '/api/ledger').then(r => r.data); }
+
+  // 合约读取
+  read(payload) { return this._request('POST', '/api/read', { body: payload }).then(r => r.data); }
+  readGet(payload) {
+    return this._request('GET', '/api/read', { query: {
+      contractAddress: payload.contractAddress, moduleName: payload.moduleName, functionName: payload.functionName,
+      args: payload.args, typeArgs: payload.typeArgs, ledgerVersion: payload.ledgerVersion,
+    }}).then(r => r.data);
+  }
+
+  // 合约写入
+  write(p) { return this._request('POST', '/api/write', { body: p }).then(r => r.data); }
+  writeMultiAgent(p) { return this._request('POST', '/api/write/multi-agent', { body: p }).then(r => r.data); }
+  writeMultiKey(p) { return this._request('POST', '/api/write/multi-key', { body: p }).then(r => r.data); }
+  writeMultisig(p) { return this._request('POST', '/api/write/multisig', { body: p }).then(r => r.data); }
+  simulate(p) { return this._request('POST', '/api/simulate', { body: p }).then(r => r.data); }
+  publishPackage(p) { return this._request('POST', '/api/publish-package', { body: p }).then(r => r.data); }
+
+  // 账户查询
+  getAccountResources(address, opts = {}) { return this._request('GET', `/api/accounts/${address}/resources`, { query: opts }).then(r => r.data); }
+  getAccountResource(payload) { return this._request('GET', `/api/accounts/${payload.address}/resource`, { query: { resourceType: payload.resourceType, ledgerVersion: payload.ledgerVersion } }).then(r => r.data); }
+  getAccountInfo(address) { return this._request('GET', `/api/accounts/${address}/info`).then(r => r.data); }
+  getAccountModules(address, opts = {}) { return this._request('GET', `/api/accounts/${address}/modules`, { query: opts }).then(r => r.data); }
+  getAccountModule(payload) { return this._request('GET', `/api/accounts/${payload.address}/module`, { query: { moduleName: payload.moduleName, ledgerVersion: payload.ledgerVersion } }).then(r => r.data); }
+
+  // 交易查询
+  getTransactionByHash(hash) { return this._request('GET', `/api/transactions/${hash}`).then(r => r.data); }
+  getTransactionByVersion(version) { return this._request('GET', `/api/transactions/version/${version}`).then(r => r.data); }
+  waitForTransaction(payload) { return this._request('GET', `/api/transactions/${payload.txnHash}/wait`, { query: { timeoutSecs: payload.timeoutSecs, checkSuccess: payload.checkSuccess } }).then(r => r.data); }
+  isPendingTransaction(hash) { return this._request('GET', `/api/transactions/${hash}/pending`).then(r => r.data); }
+
+  // 事件查询
+  getAccountEventsByCreationNumber(p) { return this._request('GET', '/api/events/account/creation', { query: p }).then(r => r.data); }
+  getAccountEventsByEventType(p) { return this._request('GET', '/api/events/account/type', { query: p }).then(r => r.data); }
+  getModuleEventsByEventType(p) { return this._request('GET', '/api/events/module/type', { query: p }).then(r => r.data); }
+
+  // 其他
+  getGasPrice() { return this._request('GET', '/api/gas-price').then(r => r.data); }
+  bcsProbe(p) { return this._request('POST', '/api/bcs/probe', { body: p }).then(r => r.data); }
+  encodeEntryFunction(p) { return this._request('POST', '/api/bcs/encode-entry-function', { body: p }).then(r => r.data); }
+  encodeMultisigPayload(p) { return this._request('POST', '/api/bcs/encode-multisig-payload', { body: p }).then(r => r.data); }
+
+  // 账户工具
+  generateAccount() { return this._request('POST', '/api/account/generate').then(r => r.data); }
+  accountFromPrivateKey(privateKey) { return this._request('POST', '/api/account/from-private-key', { body: { privateKey } }).then(r => r.data); }
+  normalizeAddress(address) { return this._request('GET', '/api/address/normalize', { query: { address } }).then(r => r.data); }
+
+  // 网络管理（需要 adminToken）
+  getNetwork() { return this._request('GET', '/admin/network').then(r => r.data); }
+  switchNetwork(network, url, skipProbe = false) {
+    return this._request('POST', '/admin/network', { body: { network, url, skipProbe }, admin: true }).then(r => r.data);
+  }
+}
+
+/* =========================================================================
+ *  Endpoint metadata
+ * ========================================================================= */
+const NETWORKS = {
+  mainnet: { rpc: 'https://rpc.endless.link/v1', chainId: '—', contract: '—', label: '主网' },
+  testnet: { rpc: 'https://rpc-test.endless.link/v1', chainId: '221', contract: '—', label: '测试网' },
+  devnet:  { rpc: 'https://rpc-dev.endless.link/v1',  chainId: '220', contract: '—', label: '开发网' }          
+};
+
+const ENDPOINTS = [
+  { group: '系统', items: [
+    { id: 'health', method: 'GET', path: '/api/health', summary: 'RPC 健康检查，返回链信息', query: [] },
+    { id: 'ledger', method: 'GET', path: '/api/ledger', summary: '同 /api/health', query: [] },
+  ]},
+  { group: '合约读取', items: [
+    { id: 'read-get', method: 'GET', path: '/api/read', summary: '读取视图函数（query 形式）',
+      query: [
+        { name: 'contractAddress', req: true, ph: '0x... 或 Base58', validate: 'address' },
+        { name: 'moduleName', req: true, ph: 'config' },
+        { name: 'functionName', req: true, ph: 'get_liquiditys' },
+        { name: 'args', req: false, ph: '["0x1", 100]', type: 'array' },
+        { name: 'typeArgs', req: false, ph: '[]', type: 'array' },
+        { name: 'ledgerVersion', req: false, ph: '指定账本版本' },
+      ]},
+    { id: 'read-post', method: 'POST', path: '/api/read', summary: '读取视图函数（body 形式，推荐）',
+      body: { template: { contractAddress: '0x1', moduleName: 'endless_coin', functionName: 'name', args: [], typeArgs: [] }, note: 'args / typeArgs 直接传数组，无需 JSON 字符串' }},
+  ]},
+  { group: '合约写入', items: [
+    { id: 'write', method: 'POST', path: '/api/write', summary: '单签写交易',
+      body: { template: { privateKey: '0x...（64 hex）', contractAddress: '0x1', moduleName: 'endless_coin', functionName: 'transfer', functionArguments: ['0x1', '100'], typeArguments: [] }, secretFields: ['privateKey'] }},
+    { id: 'write-multi-agent', method: 'POST', path: '/api/write/multi-agent', summary: 'Multi-Agent 多方签名',
+      body: { template: { senderPrivateKey: '0x...', contractAddress: '0x1', moduleName: 'module', functionName: 'func', functionArguments: [], typeArguments: [], secondarySigners: [{ privateKey: '0x...', address: '0x...' }] }, secretFields: ['senderPrivateKey'] }},
+    { id: 'write-multi-key', method: 'POST', path: '/api/write/multi-key', summary: 'MultiKey K-of-N 多签',
+      body: { template: { privateKey: '0x...', signaturesRequired: 2, publicKeys: ['0x...', '0x...', '0x...'], contractAddress: '0x1', moduleName: 'module', functionName: 'func', functionArguments: [] }, secretFields: ['privateKey'] }},
+    { id: 'write-multisig', method: 'POST', path: '/api/write/multisig', summary: '执行已批准的多签提案',
+      body: { template: { privateKey: '0x...', multisigAddress: '0x...' }, secretFields: ['privateKey'] }},
+    { id: 'simulate', method: 'POST', path: '/api/simulate', summary: '交易模拟（不签名不上链）',
+      body: { template: { senderPublicKey: '0x...', contractAddress: '0x1', moduleName: 'endless_coin', functionName: 'transfer', functionArguments: ['0x1', '100'] } }},
+    { id: 'publish-package', method: 'POST', path: '/api/publish-package', summary: '发布 Move 包',
+      body: { template: { senderPrivateKey: '0x...', metadataBytes: '0x...（hex）', moduleBytecode: ['0x...'] }, secretFields: ['senderPrivateKey'] }},
+  ]},
+  { group: '账户查询', items: [
+    { id: 'acc-resources', method: 'GET', path: '/api/accounts/:address/resources', summary: '账户资源列表', pathParams: [{ name: 'address', ph: '0x... 或 Base58', validate: 'address' }], query: [{ name: 'ledgerVersion', req: false }, { name: 'limit', req: false, type: 'number' }, { name: 'offset', req: false, type: 'number' }] },
+    { id: 'acc-resource', method: 'GET', path: '/api/accounts/:address/resource', summary: '账户单个资源', pathParams: [{ name: 'address', ph: '0x...', validate: 'address' }], query: [{ name: 'resourceType', req: true, ph: '0x1::account::Account' }, { name: 'ledgerVersion', req: false }] },
+    { id: 'acc-info', method: 'GET', path: '/api/accounts/:address/info', summary: '账户基础信息', pathParams: [{ name: 'address', ph: '0x...', validate: 'address' }], query: [] },
+    { id: 'acc-modules', method: 'GET', path: '/api/accounts/:address/modules', summary: '账户模块列表', pathParams: [{ name: 'address', ph: '0x...', validate: 'address' }], query: [{ name: 'ledgerVersion', req: false }, { name: 'limit', req: false, type: 'number' }, { name: 'offset', req: false, type: 'number' }] },
+    { id: 'acc-module', method: 'GET', path: '/api/accounts/:address/module', summary: '账户单个模块', pathParams: [{ name: 'address', ph: '0x...', validate: 'address' }], query: [{ name: 'moduleName', req: true, ph: 'nft' }, { name: 'ledgerVersion', req: false }] },
+  ]},
+  { group: '交易查询', items: [
+    { id: 'tx-hash', method: 'GET', path: '/api/transactions/:hash', summary: '按 hash 查交易', pathParams: [{ name: 'hash', ph: '0x...' }], query: [] },
+    { id: 'tx-version', method: 'GET', path: '/api/transactions/version/:version', summary: '按 version 查交易', pathParams: [{ name: 'version', ph: '12345', type: 'number' }], query: [] },
+    { id: 'tx-wait', method: 'GET', path: '/api/transactions/:hash/wait', summary: '等待交易确认', pathParams: [{ name: 'hash', ph: '0x...' }], query: [{ name: 'timeoutSecs', req: false, ph: '60', type: 'number' }, { name: 'checkSuccess', req: false, ph: 'true' }] },
+    { id: 'tx-pending', method: 'GET', path: '/api/transactions/:hash/pending', summary: '查询是否 pending', pathParams: [{ name: 'hash', ph: '0x...' }], query: [] },
+  ]},
+  { group: '事件查询', items: [
+    { id: 'ev-creation', method: 'GET', path: '/api/events/account/creation', summary: '按账户 + creationNumber 查事件', query: [{ name: 'accountAddress', req: true, ph: '0x...', validate: 'address' }, { name: 'creationNumber', req: true, ph: '0' }, { name: 'minimumLedgerVersion', req: false }] },
+    { id: 'ev-type', method: 'GET', path: '/api/events/account/type', summary: '按账户 + eventType 查事件', query: [{ name: 'accountAddress', req: true, ph: '0x...', validate: 'address' }, { name: 'eventType', req: true, ph: '0x1::coin::DepositEvent' }, { name: 'minimumLedgerVersion', req: false }] },
+    { id: 'ev-module-type', method: 'GET', path: '/api/events/module/type', summary: '按 eventType 全局查事件', query: [{ name: 'eventType', req: true, ph: '0x1::coin::DepositEvent' }, { name: 'minimumLedgerVersion', req: false }] },
+    { id: 'ev-legacy', method: 'GET', path: '/api/events', summary: '兼容旧入口', query: [{ name: 'contractAddress', req: true, ph: '0x...', validate: 'address' }, { name: 'creationNum', req: true, ph: '0' }] },
+  ]},
+  { group: '其他工具', items: [
+    { id: 'gas-price', method: 'GET', path: '/api/gas-price', summary: 'Gas 价格估算', query: [] },
+    { id: 'bcs-probe', method: 'POST', path: '/api/bcs/probe', summary: 'BCS 往返校验', body: { template: { contractAddress: '0x1', moduleName: 'endless_coin', functionName: 'name', args: [], typeArgs: [] } }},
+    { id: 'bcs-encode-entry', method: 'POST', path: '/api/bcs/encode-entry-function', summary: 'EntryFunction BCS 编码', body: { template: { functionPath: '0x1::endless_coin::transfer', functionArguments: ['0x1', '100'], argTypes: ['address', 'u128'] } }},
+    { id: 'bcs-encode-multisig', method: 'POST', path: '/api/bcs/encode-multisig-payload', summary: 'Multisig payload BCS 编码', body: { template: { functionPath: '0x1::endless_coin::transfer', functionArguments: ['0x1', '100'], argTypes: ['address', 'u128'] } }},
+  ]},
+  { group: '账户工具', items: [
+    { id: 'acc-generate', method: 'POST', path: '/api/account/generate', summary: '生成随机密钥对', body: { template: {} } },
+    { id: 'acc-from-pk', method: 'POST', path: '/api/account/from-private-key', summary: '由私钥推导账户信息', body: { template: { privateKey: '0x...' }, secretFields: ['privateKey'] }},
+    { id: 'addr-normalize', method: 'GET', path: '/api/address/normalize', summary: '地址规范化（Base58→Hex）', query: [{ name: 'address', req: true, ph: '0x1 或 Base58', validate: 'address' }] },
+  ]},
+];
+
+const ERROR_CODES = [
+  { range: '1000-1999 系统级', items: [
+    { code: 1000, name: 'INTERNAL_ERROR', http: 500, msg: '内部服务器错误', advice: '查看后端日志，多为未捕获异常' },
+    { code: 1001, name: 'CONFIGURATION_ERROR', http: 500, msg: '配置错误', advice: '检查 .env 与 settings.yaml' },
+    { code: 1002, name: 'NETWORK_ERROR', http: 503, msg: '网络连接错误', advice: '前端捕获 fetch 失败时包装；检查后端是否启动' },
+    { code: 1003, name: 'TIMEOUT_ERROR', http: 504, msg: '请求超时', advice: '调大 timeoutSecs 或检查 RPC 节点' },
+  ]},
+  { range: '2000-2999 RPC', items: [
+    { code: 2000, name: 'RPC_CONNECTION_ERROR', http: 503, msg: 'RPC 节点连接失败', advice: 'ECONNREFUSED/ENOTFOUND；切换故障转移端点' },
+    { code: 2001, name: 'RPC_TIMEOUT_ERROR', http: 504, msg: 'RPC 节点响应超时', advice: 'Cloudflare 522 常见；换节点' },
+    { code: 2002, name: 'RPC_INVALID_RESPONSE', http: 502, msg: 'RPC 返回无效数据', advice: '响应非 JSON；联系节点方' },
+    { code: 2003, name: 'RPC_RATE_LIMIT_ERROR', http: 429, msg: 'RPC 请求频率超限', advice: '降低调用频率，加重试退避' },
+    { code: 2004, name: 'RPC_UNAVAILABLE', http: 503, msg: 'RPC 节点不可用', advice: '所有故障转移端点已耗尽' },
+  ]},
+  { range: '3000-3999 合约', items: [
+    { code: 3000, name: 'CONTRACT_NOT_FOUND', http: 404, msg: '合约不存在', advice: '核对地址/模块/函数名' },
+    { code: 3001, name: 'CONTRACT_EXECUTION_ERROR', http: 400, msg: '合约执行失败', advice: '查看 VMError 详情，常见 ABORTED' },
+    { code: 3002, name: 'CONTRACT_ABI_MISMATCH', http: 400, msg: '合约 ABI 不匹配', advice: '参数类型与链上 ABI 不符' },
+    { code: 3003, name: 'CONTRACT_PARAMETER_ERROR', http: 400, msg: '合约参数错误', advice: '第 N 项参数不符合 ABI 要求' },
+    { code: 3004, name: 'CONTRACT_STATE_ERROR', http: 400, msg: '合约状态错误', advice: '资源不存在或前置条件不满足' },
+  ]},
+  { range: '4000-4999 账户', items: [
+    { code: 4000, name: 'ACCOUNT_NOT_FOUND', http: 404, msg: '账户不存在', advice: '地址未在链上注册' },
+    { code: 4001, name: 'ACCOUNT_INVALID_PRIVATE_KEY', http: 400, msg: '私钥格式错误', advice: '需 64 hex（含/不含 0x 共 64/66）' },
+    { code: 4002, name: 'ACCOUNT_INSUFFICIENT_BALANCE', http: 402, msg: '账户余额不足', advice: '充值后重试' },
+  ]},
+  { range: '5000-5999 参数', items: [
+    { code: 5000, name: 'INVALID_PARAMETER', http: 400, msg: '参数无效', advice: '按 details.parameter 修正' },
+    { code: 5001, name: 'MISSING_PARAMETER', http: 400, msg: '缺少必要参数', advice: '补全 details.parameter' },
+    { code: 5002, name: 'PARAMETER_FORMAT_ERROR', http: 400, msg: '参数格式错误', advice: 'args/typeArgs 需为 JSON 数组字符串' },
+    { code: 5003, name: 'PARAMETER_TYPE_ERROR', http: 400, msg: '参数类型错误', advice: '检查数值/字符串/数组' },
+  ]},
+  { range: '6000-6999 交易', items: [
+    { code: 6000, name: 'TRANSACTION_FAILED', http: 400, msg: '交易执行失败', advice: '查看 vm_status' },
+    { code: 6001, name: 'TRANSACTION_REJECTED', http: 400, msg: '交易被拒绝', advice: '多为 multisig approvals 不足' },
+    { code: 6002, name: 'TRANSACTION_TIMEOUT', http: 408, msg: '交易确认超时', advice: '调大 timeoutSecs' },
+    { code: 6003, name: 'TRANSACTION_INVALID', http: 400, msg: '交易无效', advice: '签名/序列号问题' },
+  ]},
+  { range: '7000-7999 事件', items: [
+    { code: 7000, name: 'EVENT_NOT_FOUND', http: 404, msg: '事件不存在', advice: 'creationNumber / eventType 有误' },
+    { code: 7001, name: 'EVENT_QUERY_ERROR', http: 400, msg: '事件查询失败', advice: '检查 eventType 格式' },
+  ]},
+  { range: '8000 故障转移', items: [
+    { code: 8000, name: 'RPC_ALL_ENDPOINTS_EXHAUSTED', http: 503, msg: '所有 RPC 备用节点均已耗尽', advice: '检查 settings.yaml 端点列表与网络' },
+  ]},
+];
+
+const SDK_METHODS = [
+  { group:'系统', items:[
+    { name:'health', mode:'none', params:[], desc:'RPC 健康检查，返回链信息' },
+    { name:'ledger', mode:'none', params:[], desc:'链信息（同 health）' },
+  ]},
+  { group:'合约读取', items:[
+    { name:'read', mode:'object', desc:'读取视图函数（POST，推荐）', params:[
+      { name:'contractAddress', req:true, ph:'0x1', validate:'address' }, { name:'moduleName', req:true, ph:'endless_coin' }, { name:'functionName', req:true, ph:'name' },
+      { name:'args', req:false, type:'array', ph:'[]' }, { name:'typeArgs', req:false, type:'array', ph:'[]' }, { name:'ledgerVersion', req:false }
+    ]},
+    { name:'readGet', mode:'object', desc:'读取视图函数（GET 形式）', params:[
+      { name:'contractAddress', req:true, ph:'0x1', validate:'address' }, { name:'moduleName', req:true, ph:'endless_coin' }, { name:'functionName', req:true, ph:'name' },
+      { name:'args', req:false, type:'array', ph:'[]' }, { name:'typeArgs', req:false, type:'array', ph:'[]' }, { name:'ledgerVersion', req:false }
+    ]},
+  ]},
+  { group:'合约写入', items:[
+    { name:'write', mode:'object', desc:'单签写交易', params:[
+      { name:'privateKey', req:true, secret:true, ph:'0x... (64 hex)', validate:'privateKey' }, { name:'contractAddress', req:true, ph:'0x1', validate:'address' },
+      { name:'moduleName', req:true, ph:'endless_coin' }, { name:'functionName', req:true, ph:'transfer' },
+      { name:'functionArguments', req:true, type:'array', ph:'["0x1", "100"]' }, { name:'typeArguments', req:false, type:'array' },
+      { name:'senderAddress', req:false, validate:'address' }, { name:'maxGasAmount', req:false, type:'number' }, { name:'gasUnitPrice', req:false, type:'number' }, { name:'txTimeoutSecs', req:false, type:'number' },
+    ]},
+    { name:'writeMultiAgent', mode:'object', desc:'Multi-Agent 多方签名', params:[
+      { name:'senderPrivateKey', req:true, secret:true, validate:'privateKey' }, { name:'contractAddress', req:true, validate:'address' }, { name:'moduleName', req:true }, { name:'functionName', req:true },
+      { name:'functionArguments', req:true, type:'array', ph:'[]' }, { name:'typeArguments', req:false, type:'array' },
+      { name:'secondarySigners', req:true, type:'array', ph:'[{privateKey:"0x...",address:"0x..."}]' }, { name:'maxGasAmount', req:false, type:'number' }, { name:'gasUnitPrice', req:false, type:'number' }, { name:'txTimeoutSecs', req:false, type:'number' },
+    ]},
+    { name:'writeMultiKey', mode:'object', desc:'K-of-N 多签', params:[
+      { name:'privateKey', req:false, secret:true, validate:'privateKey' }, { name:'signaturesRequired', req:true, type:'number' },
+      { name:'publicKeys', req:false, type:'array', ph:'["0x...","0x..."]' }, { name:'contractAddress', req:true, validate:'address' },
+      { name:'moduleName', req:true }, { name:'functionName', req:true }, { name:'functionArguments', req:true, type:'array' }, { name:'typeArguments', req:false, type:'array' },
+      { name:'maxGasAmount', req:false, type:'number' }, { name:'gasUnitPrice', req:false, type:'number' }, { name:'txTimeoutSecs', req:false, type:'number' },
+    ]},
+    { name:'writeMultisig', mode:'object', desc:'执行多签提案', params:[
+      { name:'privateKey', req:true, secret:true, validate:'privateKey' }, { name:'multisigAddress', req:true, validate:'address' }, { name:'senderAddress', req:false, validate:'address' },
+      { name:'maxGasAmount', req:false, type:'number' }, { name:'gasUnitPrice', req:false, type:'number' }, { name:'txTimeoutSecs', req:false, type:'number' },
+    ]},
+    { name:'simulate', mode:'object', desc:'交易模拟（不上链）', params:[
+      { name:'senderPublicKey', req:true, ph:'0x...' }, { name:'contractAddress', req:true, validate:'address' }, { name:'moduleName', req:true }, { name:'functionName', req:true },
+      { name:'functionArguments', req:true, type:'array' }, { name:'typeArguments', req:false, type:'array' }, { name:'senderAddress', req:false, validate:'address' },
+      { name:'maxGasAmount', req:false, type:'number' }, { name:'gasUnitPrice', req:false, type:'number' }, { name:'secondarySignersPublicKeys', req:false, type:'array' },
+    ]},
+    { name:'publishPackage', mode:'object', desc:'发布 Move 包', params:[
+      { name:'senderPrivateKey', req:true, secret:true, validate:'privateKey' }, { name:'metadataBytes', req:true, ph:'0x... (hex)' },
+      { name:'moduleBytecode', req:true, type:'array', ph:'["0x..."]' }, { name:'maxGasAmount', req:false, type:'number' },
+      { name:'gasUnitPrice', req:false, type:'number' }, { name:'txTimeoutSecs', req:false, type:'number' },
+    ]},
+  ]},
+  { group:'账户查询', items:[
+    { name:'getAccountResources', mode:'single-opt', argName:'address', desc:'账户资源列表', params:[
+      { name:'address', req:true, ph:'0x...', validate:'address' }, { name:'ledgerVersion', req:false }, { name:'limit', req:false, type:'number' }, { name:'offset', req:false, type:'number' },
+    ]},
+    { name:'getAccountResource', mode:'object', desc:'账户单个资源', params:[
+      { name:'address', req:true, validate:'address' }, { name:'resourceType', req:true, ph:'0x1::account::Account' }, { name:'ledgerVersion', req:false },
+    ]},
+    { name:'getAccountInfo', mode:'single', argName:'address', desc:'账户基础信息', params:[{ name:'address', req:true, ph:'0x...', validate:'address' }]},
+    { name:'getAccountModules', mode:'single-opt', argName:'address', desc:'账户模块列表', params:[
+      { name:'address', req:true, validate:'address' }, { name:'ledgerVersion', req:false }, { name:'limit', req:false, type:'number' }, { name:'offset', req:false, type:'number' },
+    ]},
+    { name:'getAccountModule', mode:'object', desc:'账户单个模块', params:[
+      { name:'address', req:true, validate:'address' }, { name:'moduleName', req:true, ph:'nft' }, { name:'ledgerVersion', req:false },
+    ]},
+  ]},
+  { group:'交易查询', items:[
+    { name:'getTransactionByHash', mode:'single', argName:'hash', desc:'按 hash 查交易', params:[{ name:'hash', req:true, ph:'0x...' }]},
+    { name:'getTransactionByVersion', mode:'single', argName:'version', desc:'按 version 查交易', params:[{ name:'version', req:true, ph:'12345', type:'number' }]},
+    { name:'waitForTransaction', mode:'object', desc:'等待交易确认', params:[
+      { name:'txnHash', req:true, ph:'0x...' }, { name:'timeoutSecs', req:false, type:'number' }, { name:'checkSuccess', req:false, ph:'true' },
+    ]},
+    { name:'isPendingTransaction', mode:'single', argName:'hash', desc:'是否 pending', params:[{ name:'hash', req:true, ph:'0x...' }]},
+  ]},
+  { group:'事件查询', items:[
+    { name:'getAccountEventsByCreationNumber', mode:'object', desc:'按账户+creationNumber 查事件', params:[
+      { name:'accountAddress', req:true, validate:'address' }, { name:'creationNumber', req:true, ph:'0' }, { name:'minimumLedgerVersion', req:false },
+    ]},
+    { name:'getAccountEventsByEventType', mode:'object', desc:'按账户+eventType 查事件', params:[
+      { name:'accountAddress', req:true, validate:'address' }, { name:'eventType', req:true, ph:'0x1::coin::DepositEvent' }, { name:'minimumLedgerVersion', req:false },
+    ]},
+    { name:'getModuleEventsByEventType', mode:'object', desc:'按 eventType 全局查事件', params:[
+      { name:'eventType', req:true, ph:'0x1::coin::DepositEvent' }, { name:'minimumLedgerVersion', req:false },
+    ]},
+  ]},
+  { group:'其他工具', items:[
+    { name:'getGasPrice', mode:'none', params:[], desc:'Gas 价格估算' },
+    { name:'bcsProbe', mode:'object', desc:'BCS 往返校验', params:[
+      { name:'contractAddress', req:true, validate:'address' }, { name:'moduleName', req:true }, { name:'functionName', req:true },
+      { name:'args', req:false, type:'array' }, { name:'typeArgs', req:false, type:'array' },
+    ]},
+    { name:'encodeEntryFunction', mode:'object', desc:'EntryFunction BCS 编码', params:[
+      { name:'functionPath', req:true, ph:'0x1::endless_coin::transfer' }, { name:'functionArguments', req:true, type:'array', ph:'["0x1", "100"]' },
+      { name:'typeArguments', req:false, type:'array' }, { name:'argTypes', req:false, type:'array', ph:'["address","u128"]' },
+    ]},
+    { name:'encodeMultisigPayload', mode:'object', desc:'Multisig payload BCS 编码', params:[
+      { name:'functionPath', req:true }, { name:'functionArguments', req:true, type:'array' }, { name:'typeArguments', req:false, type:'array' }, { name:'argTypes', req:false, type:'array' },
+    ]},
+  ]},
+  { group:'账户工具', items:[
+    { name:'generateAccount', mode:'none', params:[], desc:'生成随机密钥对' },
+    { name:'accountFromPrivateKey', mode:'single', argName:'privateKey', desc:'由私钥推导账户', params:[{ name:'privateKey', req:true, secret:true, validate:'privateKey' }]},
+    { name:'normalizeAddress', mode:'single', argName:'address', desc:'地址规范化（Base58↔Hex）', params:[{ name:'address', req:true, ph:'0x1 或 Base58', validate:'address' }]},
+  ]},
+];
+
+/* =========================================================================
+ *  State & helpers
+ * ========================================================================= */
+let currentEndpoint = null;
+let currentRespTab = 'json';
+let lastResponse = null;
+let client = new EndlessClient(document.getElementById('baseUrl').value);
+const $ = (id) => document.getElementById(id);
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+}
+
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+  return (n/1024/1024).toFixed(2) + ' MB';
+}
+
+function tryPrettyJson(s) {
+  try { return JSON.stringify(JSON.parse(s), null, 2); } catch (_) { return s; }
+}
+
+function highlight(code) {
+  if (window.hljs) {
+    try { return window.hljs.highlight(code, { language: 'json' }).value; } catch (_) {}
+  }
+  return escapeHtml(code);
+}
+
+function showToast(msg, type = 'info') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function validateField(value, type) {
+  if (!type) return null;
+  value = String(value).trim();
+  if (value === '') return null;
+  if (type === 'number') {
+    if (Number.isNaN(Number(value))) return '必须为数字';
+  }
+  if (type === 'address') {
+    if (!/^0x[0-9a-fA-F]+$|^[A-HJ-NP-Za-km-z1-9]+$/.test(value)) return '地址格式不正确';
+  }
+  if (type === 'privateKey') {
+    const hex = value.replace(/^0x/, '');
+    if (!/^[0-9a-fA-F]{64}$/.test(hex)) return '私钥应为 64 位 hex';
+  }
+  return null;
+}
+
+function validateJson(value) {
+  try { JSON.parse(value); return null; } catch (e) { return 'JSON 格式错误：' + e.message; }
+}
+
+/* =========================================================================
+ *  Console endpoints
+ * ========================================================================= */
+function renderEndpoints(filter = '') {
+  const list = $('epList');
+  list.innerHTML = '';
+  const f = filter.trim().toLowerCase();
+  ENDPOINTS.forEach(grp => {
+    const matched = grp.items.filter(ep => !f || ep.path.toLowerCase().includes(f) || ep.summary.toLowerCase().includes(f) || grp.group.toLowerCase().includes(f));
+    if (!matched.length) return;
+    const gDiv = document.createElement('div');
+    gDiv.className = 'ep-group';
+    gDiv.innerHTML = `<div class="ep-group-title">${escapeHtml(grp.group)}</div>`;
+    matched.forEach(ep => {
+      const item = document.createElement('div');
+      item.className = 'ep-item' + (currentEndpoint && currentEndpoint.id === ep.id ? ' active' : '');
+      item.dataset.id = ep.id;
+      item.innerHTML = `<span class="method ${ep.method}">${ep.method}</span><span class="path" title="${escapeHtml(ep.summary)}">${escapeHtml(ep.path)}</span>`;
+      item.onclick = () => selectEndpoint(ep.id);
+      gDiv.appendChild(item);
+    });
+    list.appendChild(gDiv);
+  });
+}
+
+function selectEndpoint(id) {
+  let found = null;
+  for (const grp of ENDPOINTS) {
+    const m = grp.items.find(i => i.id === id);
+    if (m) { found = m; break; }
+  }
+  if (!found) return;
+  currentEndpoint = found;
+  renderEndpoints($('epSearch').value);
+  renderForm(found);
+  // 移动端自动收起侧边栏
+  if (window.innerWidth <= 1024) {
+    $('consoleSidebar').style.display = 'none';
+  }
+}
+
+function renderForm(ep) {
+  $('epTitle').textContent = ep.path.split('/').slice(-1)[0] || ep.path;
+  $('epSummary').textContent = ep.summary;
+  $('pathDisplay').style.display = 'flex';
+  $('pathMethod').textContent = ep.method;
+  $('pathMethod').className = 'method ' + ep.method;
+  $('pathUrl').innerHTML = escapeHtml(ep.path).replace(/:(\w+)/g, '<span class="param">:$1</span>');
+  $('formActions').style.display = 'flex';
+
+  const body = $('formBody');
+  body.innerHTML = '';
+
+  const helper = document.createElement('div');
+  helper.className = 'helper-banner';
+  helper.innerHTML = '<span>💡</span><span>按 <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 快速发送，参数变更会实时校验。</span>';
+  body.appendChild(helper);
+
+  // 网络预设
+  if (ep.path !== '/api/health' && ep.path !== '/api/ledger') {
+    const presetRow = document.createElement('div');
+    presetRow.className = 'preset-row';
+    Object.entries(NETWORKS).forEach(([k, v]) => {
+      const chip = document.createElement('button');
+      chip.className = 'preset-chip';
+      chip.textContent = `${v.label} · ${v.contract.slice(0, 8)}...`;
+      chip.title = `${v.rpc} (chainId=${v.chainId})`;
+      chip.onclick = () => fillNetworkContract(v.contract);
+      presetRow.appendChild(chip);
+    });
+    body.appendChild(presetRow);
+  }
+
+  // 路径参数
+  if (ep.pathParams && ep.pathParams.length) {
+    const sec = document.createElement('div');
+    sec.className = 'form-section';
+    sec.innerHTML = `<div class="form-section-title">路径参数</div>`;
+    ep.pathParams.forEach(p => sec.appendChild(makeField(p.name, true, p.ph || '', 'text', p.validate)));
+    body.appendChild(sec);
+  }
+
+  // 查询参数
+  if (ep.method === 'GET' && ep.query && ep.query.length) {
+    const sec = document.createElement('div');
+    sec.className = 'form-section';
+    sec.innerHTML = `<div class="form-section-title">查询参数</div>`;
+    ep.query.forEach(p => {
+      const isSecret = /private|signer/i.test(p.name);
+      sec.appendChild(makeField(p.name, p.req, p.ph || '', isSecret ? 'password' : 'text', p.validate || p.type, p.type));
+    });
+    body.appendChild(sec);
+  }
+
+  // 请求体
+  if (ep.method === 'POST' && ep.body) {
+    const sec = document.createElement('div');
+    sec.className = 'form-section';
+    sec.innerHTML = `<div class="form-section-title">请求体 (JSON)</div>`;
+    const editor = document.createElement('div');
+    editor.className = 'json-editor';
+    editor.id = 'bodyEditorWrap';
+    const ta = document.createElement('textarea');
+    ta.id = 'bodyEditor';
+    ta.spellcheck = false;
+    ta.value = JSON.stringify(ep.body.template, null, 2);
+    ta.oninput = () => validateBodyEditor();
+    const tb = document.createElement('div');
+    tb.className = 'toolbar';
+    tb.innerHTML = `
+      <button type="button" id="loadTemplateBtn">载入模板</button>
+      <button type="button" id="formatBodyBtn">格式化</button>
+      <button type="button" id="minifyBodyBtn">压缩</button>
+    `;
+    tb.querySelector('#loadTemplateBtn').onclick = () => { ta.value = JSON.stringify(ep.body.template, null, 2); validateBodyEditor(); };
+    tb.querySelector('#formatBodyBtn').onclick = () => {
+      try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); validateBodyEditor(); showToast('已格式化', 'success'); }
+      catch (e) { showToast(e.message, 'error'); }
+    };
+    tb.querySelector('#minifyBodyBtn').onclick = () => {
+      try { ta.value = JSON.stringify(JSON.parse(ta.value)); validateBodyEditor(); showToast('已压缩', 'success'); }
+      catch (e) { showToast(e.message, 'error'); }
+    };
+    editor.appendChild(ta);
+    editor.appendChild(tb);
+    sec.appendChild(editor);
+    if (ep.body.note) {
+      const hint = document.createElement('div');
+      hint.className = 'field-hint';
+      hint.textContent = ep.body.note;
+      sec.appendChild(hint);
+    }
+    body.appendChild(sec);
+    validateBodyEditor();
+  }
+}
+
+function makeField(name, req, ph, type, validateType, arrayType) {
+  const f = document.createElement('div');
+  f.className = 'field';
+  const isSecret = type === 'password';
+  const isArray = arrayType === 'array' || validateType === 'array';
+
+  f.innerHTML = `
+    <div class="field-label">
+      <span>${escapeHtml(name)}</span>
+      ${req ? '<span class="req">*</span>' : '<span class="opt">optional</span>'}
+    </div>
+    <div class="field-input" id="field-input-${name}">
+      ${isArray ? '<div class="array-field" data-field="' + name + '"></div>' : `<input data-field="${name}" type="${type}" placeholder="${escapeHtml(ph || '')}" spellcheck="false" ${validateType === 'number' ? 'inputmode="decimal"' : ''} />`}
+      ${isSecret ? '<button class="toggle-eye" type="button" title="显示/隐藏">👁</button>' : ''}
+    </div>
+    <div class="field-error" id="err-${name}" style="display:none"></div>
+  `;
+
+  if (isSecret) {
+    const input = f.querySelector('input');
+    const btn = f.querySelector('.toggle-eye');
+    btn.onclick = () => { input.type = input.type === 'password' ? 'text' : 'password'; };
+  }
+
+  if (isArray) {
+    const container = f.querySelector('.array-field');
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-add-array';
+    addBtn.type = 'button';
+    addBtn.textContent = '+ 添加数组项';
+    addBtn.onclick = () => addArrayItem(container, '');
+    f.appendChild(addBtn);
+    if (ph && ph.startsWith('[')) {
+      try { JSON.parse(ph).forEach(v => addArrayItem(container, JSON.stringify(v).replace(/^"|"$/g, ''))); } catch (_) {}
+    }
+  }
+
+  const input = f.querySelector('[data-field]');
+  if (input) {
+    input.addEventListener('input', () => validateFieldUI(name, validateType));
+    input.addEventListener('blur', () => validateFieldUI(name, validateType));
+  }
+  return f;
+}
+
+function addArrayItem(container, value) {
+  const row = document.createElement('div');
+  row.className = 'array-item';
+  row.innerHTML = `<input type="text" value="${escapeHtml(value)}" placeholder="JSON 值" spellcheck="false" /><button type="button" title="删除">×</button>`;
+  row.querySelector('button').onclick = () => row.remove();
+  container.appendChild(row);
+  return row.querySelector('input');
+}
+
+function getArrayValues(name) {
+  const container = document.querySelector(`[data-field="${name}"].array-field`);
+  if (!container) return [];
+  const values = [];
+  container.querySelectorAll('.array-item input').forEach(input => {
+    const v = input.value.trim();
+    if (v === '') return;
+    try { values.push(JSON.parse(v)); } catch (_) { values.push(v); }
+  });
+  return values;
+}
+
+function fillNetworkContract(contract) {
+  const inputs = document.querySelectorAll('[data-field="contractAddress"], [data-field="accountAddress"], [data-field="address"]');
+  inputs.forEach(el => { if (el.closest('.form-body')) el.value = contract; });
+  showToast('已填充网络合约地址', 'success');
+}
+
+function validateFieldUI(name, validateType) {
+  const el = document.querySelector(`[data-field="${name}"]`);
+  const errEl = $(`err-${name}`);
+  if (!el || !errEl) return true;
+  const value = el.value || '';
+  const isArray = el.classList.contains('array-field');
+  let error = null;
+
+  if (!isArray) {
+    error = validateField(value, validateType);
+  }
+
+  const inputWrap = el.closest('.field-input') || el.closest('.array-field');
+  if (error) {
+    errEl.textContent = error;
+    errEl.style.display = 'flex';
+    if (!isArray) el.classList.add('error');
+    else inputWrap.classList.add('error');
+  } else {
+    errEl.style.display = 'none';
+    if (!isArray) el.classList.remove('error');
+    else inputWrap.classList.remove('error');
+  }
+  return !error;
+}
+
+function validateBodyEditor() {
+  const ta = $('bodyEditor');
+  const wrap = $('bodyEditorWrap');
+  if (!ta || !wrap) return true;
+  const err = validateJson(ta.value);
+  if (err) {
+    wrap.classList.add('error');
+    showToast(err, 'error');
+    return false;
+  }
+  wrap.classList.remove('error');
+  return true;
+}
+
+function validateAll() {
+  if (!currentEndpoint) return false;
+  let ok = true;
+  // 路径参数
+  if (currentEndpoint.pathParams) {
+    currentEndpoint.pathParams.forEach(p => { if (!validateFieldUI(p.name, p.validate)) ok = false; });
+  }
+  // 查询参数
+  if (currentEndpoint.query) {
+    currentEndpoint.query.forEach(p => { if (!validateFieldUI(p.name, p.validate || p.type)) ok = false; });
+  }
+  // 请求体
+  if (currentEndpoint.body && !validateBodyEditor()) ok = false;
+  return ok;
+}
+
+function buildRequest() {
+  const ep = currentEndpoint;
+  if (!ep) return null;
+  let path = ep.path;
+  let query = {};
+  let bodyData = undefined;
+
+  if (ep.pathParams) {
+    ep.pathParams.forEach(p => {
+      const el = document.querySelector(`[data-field="${p.name}"]`);
+      const v = el ? el.value.trim() : '';
+      path = path.replace(':' + p.name, encodeURIComponent(v));
+    });
+  }
+  if (ep.query) {
+    ep.query.forEach(p => {
+      const el = document.querySelector(`[data-field="${p.name}"]`);
+      if (!el) return;
+      const isArray = el.classList.contains('array-field');
+      const value = isArray ? getArrayValues(p.name) : el.value.trim();
+      if (value === '' || (Array.isArray(value) && value.length === 0)) return;
+      if (p.type === 'number' && value !== '') query[p.name] = Number(value);
+      else query[p.name] = Array.isArray(value) ? JSON.stringify(value) : value;
+    });
+  }
+  if (ep.body) {
+    const ta = $('bodyEditor');
+    bodyData = JSON.parse(ta.value);
+  }
+  return { method: ep.method, path, query, body: bodyData, endpoint: ep };
+}
+
+function buildCurl(req) {
+  const base = $('baseUrl').value.replace(/\/+$/, '');
+  let url = base + req.path;
+  if (Object.keys(req.query).length) {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(req.query)) qs.append(k, v);
+    url += '?' + qs.toString();
+  }
+  const parts = ['curl -X ' + req.method, `"${url}"`];
+  if (req.body !== undefined) {
+    parts.push('-H "Content-Type: application/json"');
+    parts.push('-d ' + JSON.stringify(JSON.stringify(req.body)));
+  }
+  return parts.join(' \\n  ');
+}
+
+async function sendRequest() {
+  if (!currentEndpoint) { showToast('请先选择端点'); return; }
+  if (!validateAll()) { showToast('请修正标红的字段', 'error'); return; }
+  let req;
+  try { req = buildRequest(); }
+  catch (e) { showToast(e.message, 'error'); return; }
+
+  const btn = $('sendBtn');
+  btn.disabled = true;
+  $('statusBadge').className = 'status-badge loading';
+  $('statusBadge').textContent = 'LOADING';
+  $('metaStatus').textContent = '请求中...';
+  $('metaDuration').textContent = '—';
+  $('metaSize').textContent = '—';
+  $('respBody').innerHTML = '<div class="resp-empty"><div class="icon">⏳</div><div class="title">请求中...</div></div>';
+
+  const t0 = performance.now();
+  try {
+    const result = await client._request(req.method, req.path, { query: req.query, body: req.body });
+    const dur = Math.round(performance.now() - t0);
+    lastResponse = { data: result.data, status: result.status, durationMs: dur, req, headers: result.headers };
+    renderResponse(lastResponse);
+    addHistory(req, result.status, result.durationMs, result.data);
+  } catch (e) {
+    const dur = Math.round(performance.now() - t0);
+    lastResponse = { data: e.details || e.message, error: e, status: e.httpStatus || 0, durationMs: dur, req, headers: {} };
+    renderResponse(lastResponse);
+    addHistory(req, e.httpStatus || 0, dur, { error: { code: e.code, message: e.message } });
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderResponse(resp) {
+  const ok = resp.status >= 200 && resp.status < 300;
+  $('statusBadge').className = 'status-badge ' + (ok ? 'success' : 'error');
+  $('statusBadge').textContent = ok ? 'SUCCESS' : 'ERROR';
+  $('metaStatus').textContent = 'HTTP ' + (resp.status || '—');
+  $('metaDuration').textContent = resp.durationMs + ' ms';
+  const sizeStr = typeof resp.data === 'string' ? resp.data.length : JSON.stringify(resp.data).length;
+  $('metaSize').textContent = formatBytes(sizeStr);
+  renderRespTab();
+}
+
+function renderRespTab() {
+  const body = $('respBody');
+  body.innerHTML = '';
+  if (!lastResponse) return;
+  const resp = lastResponse;
+
+  if (resp.error && currentRespTab !== 'curl') {
+    const card = document.createElement('div');
+    card.className = 'error-card';
+    const details = resp.error.details ? JSON.stringify(resp.error.details, null, 2) : '';
+    card.innerHTML = `
+      <div class="ec-code">错误码 ${resp.error.code}</div>
+      <div class="ec-msg">${escapeHtml(resp.error.message)}</div>
+      ${details ? `<details class="ec-details"><summary>展开详情</summary><pre class="json-block">${escapeHtml(details)}</pre></details>` : ''}
+      <span class="ec-link" id="jumpErr">→ 查看错误码字典</span>
+    `;
+    card.querySelector('#jumpErr').onclick = () => switchView('errors');
+    body.appendChild(card);
+  }
+
+  if (currentRespTab === 'curl') {
+    const block = document.createElement('pre');
+    block.className = 'curl-block';
+    block.textContent = buildCurl(resp.req);
+    body.appendChild(block);
+    return;
+  }
+
+  if (currentRespTab === 'headers') {
+    const table = document.createElement('table');
+    table.className = 'headers-table';
+    const headers = resp.headers || {};
+    table.innerHTML = `<thead><tr><th>Header</th><th>Value</th></tr></thead><tbody>${Object.entries(headers).map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(v))}</td></tr>`).join('')}</tbody>`;
+    body.appendChild(table);
+    return;
+  }
+
+  if (currentRespTab === 'raw') {
+    const block = document.createElement('pre');
+    block.className = 'json-block';
+    block.textContent = typeof resp.data === 'string' ? resp.data : JSON.stringify(resp.data, null, 2);
+    body.appendChild(block);
+    return;
+  }
+
+  const jsonStr = typeof resp.data === 'string' ? tryPrettyJson(resp.data) : JSON.stringify(resp.data, null, 2);
+  const block = document.createElement('pre');
+  block.className = 'json-block';
+  block.innerHTML = highlight(jsonStr);
+  body.appendChild(block);
+}
+
+/* =========================================================================
+ *  History
+ * ========================================================================= */
+const HKEY = 'endless_debug_history';
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (_) { return []; } }
+function addHistory(req, status, durMs, data) {
+  let hist = loadHistory();
+  hist.unshift({
+    id: Math.random().toString(36).slice(2),
+    ts: Date.now(), method: req.method, path: req.path, baseUrl: $('baseUrl').value,
+    status, durationMs: durMs, requestBody: req.body, endpointId: req.endpoint?.id,
+    responseSnippet: (typeof data === 'string' ? data : JSON.stringify(data)).slice(0, 500),
+  });
+  hist = hist.slice(0, 30);
+  localStorage.setItem(HKEY, JSON.stringify(hist));
+  renderHistory();
+}
+function renderHistory() {
+  const list = $('histList');
+  const hist = loadHistory();
+  const badge = $('histBadge');
+  badge.textContent = hist.length;
+  badge.style.display = hist.length ? 'grid' : 'none';
+  if (!hist.length) { list.innerHTML = '<div style="text-align:center;color:var(--text-3);padding:40px 0;font-size:12px">暂无历史记录</div>'; return; }
+  list.innerHTML = '';
+  hist.forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const cls = h.status >= 500 ? 's5' : (h.status >= 400 ? 's4' : 's2');
+    item.innerHTML = `
+      <div class="hi-row">
+        <span class="method ${h.method}">${h.method}</span>
+        <span class="hi-status ${cls}">${h.status || 'ERR'}</span>
+        <span class="hi-time">${new Date(h.ts).toLocaleTimeString()}</span>
+      </div>
+      <div class="hi-path">${escapeHtml(h.path)}</div>
+      <div class="hi-path" style="color:var(--text-3);font-size:10px">${h.durationMs}ms · ${escapeHtml(h.responseSnippet.slice(0, 80))}...</div>
+      <div class="hi-replay">点击重新发起请求</div>
+    `;
+    item.onclick = () => { replayHistory(h); };
+    list.appendChild(item);
+  });
+}
+function replayHistory(h) {
+  $('baseUrl').value = h.baseUrl;
+  client.baseUrl = h.baseUrl.replace(/\/+$/, '');
+  if (h.endpointId) { selectEndpoint(h.endpointId); }
+  $('histDrawer').classList.remove('open');
+  showToast('已载入历史请求，请检查参数后发送');
+}
+
+/* =========================================================================
+ *  Docs view
+ * ========================================================================= */
+function renderDocs() {
+  const grid = $('docsGrid');
+  grid.innerHTML = '';
+  ENDPOINTS.forEach(grp => {
+    grp.items.forEach(ep => {
+      const card = document.createElement('div');
+      card.className = 'doc-card';
+      const params = [];
+      if (ep.pathParams) params.push(...ep.pathParams.map(p => p.name));
+      if (ep.query) params.push(...ep.query.filter(p => p.req).map(p => p.name));
+      if (ep.body) params.push('body');
+      card.innerHTML = `
+        <div class="doc-head"><span class="method ${ep.method}">${ep.method}</span><span class="doc-title">${escapeHtml(ep.path.split('/').slice(-1)[0])}</span></div>
+        <div class="doc-path">${escapeHtml(ep.path)}</div>
+        <div class="doc-summary">${escapeHtml(ep.summary)}</div>
+        <div class="doc-params"><strong>必填：</strong>${params.length ? escapeHtml(params.join(', ')) : '无'}</div>
+      `;
+      card.onclick = () => { switchView('console'); selectEndpoint(ep.id); };
+      grid.appendChild(card);
+    });
+  });
+}
+
+/* =========================================================================
+ *  Error dictionary
+ * ========================================================================= */
+function renderErrorDict(filter = '') {
+  const root = $('errDict');
+  root.innerHTML = '';
+  const f = filter.trim().toLowerCase();
+  ERROR_CODES.forEach(grp => {
+    const visible = grp.items.filter(it => !f || String(it.code).includes(f) || it.name.toLowerCase().includes(f) || it.msg.toLowerCase().includes(f) || it.advice.toLowerCase().includes(f));
+    if (!visible.length) return;
+    const g = document.createElement('div');
+    g.className = 'err-group';
+    g.innerHTML = `<div class="err-group-title">${escapeHtml(grp.range)}</div>`;
+    const tbl = document.createElement('table');
+    tbl.className = 'err-table';
+    tbl.innerHTML = `
+      <thead><tr><th>Code</th><th>Name</th><th>HTTP</th><th>含义</th><th>处理建议</th></tr></thead>
+      <tbody>${visible.map(it => `
+        <tr><td class="code">${it.code}</td><td class="name">${escapeHtml(it.name)}</td><td class="http ${it.http >= 500 ? 'h5' : (it.http >= 400 ? 'h4' : 'h2')}">${it.http}</td><td>${escapeHtml(it.msg)}</td><td style="color:var(--text-2)">${escapeHtml(it.advice)}</td></tr>
+      `).join('')}</tbody>
+    `;
+    g.appendChild(tbl);
+    root.appendChild(g);
+  });
+}
+
+/* =========================================================================
+ *  SDK view
+ * ========================================================================= */
+let currentSdkMethod = null;
+function renderSdkMethods(filter = '') {
+  const list = $('sdkList');
+  list.innerHTML = '';
+  const f = filter.trim().toLowerCase();
+  SDK_METHODS.forEach(grp => {
+    const matched = grp.items.filter(m => !f || m.name.toLowerCase().includes(f) || (m.desc||'').toLowerCase().includes(f) || grp.group.toLowerCase().includes(f));
+    if (!matched.length) return;
+    const g = document.createElement('div');
+    g.innerHTML = `<div class="sdk-group-title">${escapeHtml(grp.group)}</div>`;
+    matched.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'sdk-method-item' + (currentSdkMethod && currentSdkMethod.name === m.name ? ' active' : '');
+      item.innerHTML = `<div class="mname"><span class="dot">▸</span>${escapeHtml(m.name)}()</div><div class="mdesc">${escapeHtml(m.desc||'')}</div>`;
+      item.onclick = () => selectSdkMethod(m.name);
+      g.appendChild(item);
+    });
+    list.appendChild(g);
+  });
+}
+function selectSdkMethod(name) {
+  let found = null;
+  for (const grp of SDK_METHODS) { const m = grp.items.find(i => i.name === name); if (m) { found = m; break; } }
+  if (!found) return;
+  currentSdkMethod = found;
+  renderSdkMethods($('sdkSearch').value);
+  renderSdkForm(found);
+}
+function renderSdkForm(m) {
+  $('sdkMethodTitle').textContent = m.name + '()';
+  $('sdkMethodDesc').textContent = m.desc || '';
+  $('sdkSigWrap').style.display = 'flex';
+  let sig;
+  if (m.mode === 'none') sig = `client.${m.name}()`;
+  else if (m.mode === 'single') sig = `client.${m.name}(${m.argName})`;
+  else if (m.mode === 'single-opt') {
+    const opts = m.params.filter(p => p.name !== m.argName).map(p => p.name).join(', ');
+    sig = `client.${m.name}(${m.argName}${opts ? ', { ' + opts + ' }' : ''})`;
+  } else {
+    const fields = m.params.map(p => p.name + (p.req ? '*' : '')).join(', ');
+    sig = `client.${m.name}({ ${fields} })`;
+  }
+  $('sdkSignature').textContent = sig;
+  $('sdkFormActions').style.display = 'flex';
+
+  const body = $('sdkFormBody');
+  body.innerHTML = '';
+
+  if (!m.params.length) {
+    const note = document.createElement('div');
+    note.style.cssText = 'padding:30px 20px;text-align:center;color:var(--text-2);font-size:13px;line-height:1.6';
+    note.innerHTML = '该方法<b style="color:var(--neon-2)">无需参数</b><br>直接点击下方「调用」按钮即可';
+    body.appendChild(note);
+    return;
+  }
+
+  const presetRow = document.createElement('div');
+  presetRow.className = 'preset-row';
+  Object.entries(NETWORKS).forEach(([k, v]) => {
+    const chip = document.createElement('button');
+    chip.className = 'preset-chip';
+    chip.textContent = `${v.label} 合约`;
+    chip.onclick = () => {
+      const addrInput = body.querySelector('input[data-field="contractAddress"], input[data-field="accountAddress"], input[data-field="address"]');
+      if (addrInput) { addrInput.value = v.contract; showToast(`已填充 ${v.label} 合约地址`, 'success'); }
+      else showToast('当前方法无可填充地址的字段');
+    };
+    presetRow.appendChild(chip);
+  });
+  body.appendChild(presetRow);
+
+  const sec = document.createElement('div');
+  sec.className = 'form-section';
+  sec.innerHTML = `<div class="form-section-title">参数</div>`;
+  m.params.forEach(p => {
+    const isSecret = p.secret || /private/i.test(p.name);
+    const type = isSecret ? 'password' : 'text';
+    const f = makeField(p.name, p.req, p.ph || '', type, p.validate || p.type, p.type === 'array' ? 'array' : undefined);
+    if (p.type === 'array') {
+      const hint = document.createElement('div');
+      hint.className = 'field-hint';
+      hint.textContent = 'JSON 数组，每项单独填写，字符串保留引号';
+      f.appendChild(hint);
+    } else if (p.type === 'number') {
+      const hint = document.createElement('div');
+      hint.className = 'field-hint';
+      hint.textContent = '数字类型';
+      f.appendChild(hint);
+    }
+    sec.appendChild(f);
+  });
+  body.appendChild(sec);
+}
+
+function buildSdkCall() {
+  const m = currentSdkMethod;
+  if (!m) return null;
+  const vals = {};
+  for (const p of m.params) {
+    const el = document.querySelector(`#sdkFormBody [data-field="${p.name}"]`);
+    if (!el) continue;
+    let v;
+    if (el.classList.contains('array-field')) {
+      v = getArrayValues(p.name);
+      if (!v.length && !p.req) continue;
+    } else {
+      v = el.value.trim();
+      if (v === '' && !p.req) continue;
+      if (v === '' && p.req) throw new Error(`参数 ${p.name} 必填`);
+    }
+    if (p.type === 'array') {
+      // already array
+    } else if (p.type === 'number') {
+      v = Number(v);
+      if (Number.isNaN(v)) throw new Error(`${p.name} 不是数字`);
+    }
+    vals[p.name] = v;
+  }
+  let callArgs;
+  if (m.mode === 'none') callArgs = [];
+  else if (m.mode === 'single') callArgs = [vals[m.argName]];
+  else if (m.mode === 'single-opt') {
+    const firstArg = vals[m.argName];
+    const opts = {};
+    m.params.forEach(p => { if (p.name !== m.argName && vals[p.name] !== undefined) opts[p.name] = vals[p.name]; });
+    callArgs = Object.keys(opts).length ? [firstArg, opts] : [firstArg];
+  } else {
+    callArgs = [vals];
+  }
+  return { callArgs };
+}
+function buildSdkCallCode(callArgs) {
+  const m = currentSdkMethod;
+  return `await client.${m.name}(${callArgs.map(a => JSON.stringify(a)).join(', ')})`;
+}
+async function callSdkMethod() {
+  const m = currentSdkMethod;
+  if (!m) { showToast('请先选择方法'); return; }
+  let built;
+  try { built = buildSdkCall(); }
+  catch (e) { showToast(e.message, 'error'); return; }
+  if (!built) return;
+
+  const btn = $('sdkCallBtn');
+  btn.disabled = true;
+  $('sdkStatus').className = 'status-badge loading';
+  $('sdkStatus').textContent = 'LOADING';
+  $('sdkMeta').textContent = '调用中...';
+  $('sdkRespBody').innerHTML = '<pre class="json-block" style="color:var(--text-3)">// 调用中...</pre>';
+
+  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
+  const t0 = performance.now();
+  try {
+    const result = await client[m.name](...built.callArgs);
+    const dur = Math.round(performance.now() - t0);
+    $('sdkStatus').className = 'status-badge success';
+    $('sdkStatus').textContent = 'SUCCESS';
+    $('sdkMeta').textContent = dur + ' ms';
+    const jsonStr = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    $('sdkRespBody').innerHTML = '<pre class="json-block"></pre>';
+    $('sdkRespBody').firstElementChild.innerHTML = highlight(jsonStr);
+  } catch (e) {
+    const dur = Math.round(performance.now() - t0);
+    $('sdkStatus').className = 'status-badge error';
+    $('sdkStatus').textContent = 'ERROR';
+    $('sdkMeta').textContent = dur + ' ms';
+    let txt = '✗ ' + (e.name || 'Error') + ': ' + e.message;
+    if (e.code !== undefined) txt = '✗ 错误码 ' + e.code + ': ' + e.message;
+    if (e.details) txt += '\n' + JSON.stringify(e.details, null, 2);
+    $('sdkRespBody').innerHTML = `<pre class="json-block" style="color:var(--error);white-space:pre-wrap">${escapeHtml(txt)}</pre>`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* =========================================================================
+ *  Network status
+ * ========================================================================= */
+let currentNetwork = 'devnet';
+
+function renderNetworkStatus(cfg) {
+  currentNetwork = cfg.network || 'devnet';
+  $('networkPreset').value = currentNetwork;
+}
+
+/* =========================================================================
+ *  Health check
+ * ========================================================================= */
+async function checkHealth() {
+  const dot = $('lampDot');
+  const txt = $('lampText');
+  dot.className = 'lamp-dot checking';
+  txt.textContent = '检测中';
+  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
+  try {
+    const [netCfg, health] = await Promise.all([
+      client.getNetwork().catch(() => null),
+      client.health().catch(() => null),
+    ]);
+    if (netCfg) renderNetworkStatus(netCfg);
+    if (health && health.ok !== false) {
+      dot.className = 'lamp-dot ok';
+      txt.textContent = `${currentNetwork.toUpperCase()} · chain ${health.chainId ?? '?'}`;
+    } else {
+      dot.className = 'lamp-dot fail';
+      txt.textContent = `${currentNetwork.toUpperCase()} · 异常`;
+    }
+  } catch (e) {
+    dot.className = 'lamp-dot fail';
+    txt.textContent = `${currentNetwork.toUpperCase()} · 不可达`;
+  }
+}
+
+/* =========================================================================
+ *  View switch & wiring
+ * ========================================================================= */
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  $(`view-${name}`).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  $('topbarTabs').classList.remove('open');
+  if (name === 'docs') renderDocs();
+  if (name === 'errors') renderErrorDict($('errSearch').value);
+}
+
+document.querySelectorAll('.tab-btn').forEach(b => { b.onclick = () => switchView(b.dataset.view); });
+$('mobileMenuBtn').onclick = () => { $('topbarTabs').classList.toggle('open'); };
+
+$('epSearch').addEventListener('input', e => renderEndpoints(e.target.value));
+$('sendBtn').onclick = sendRequest;
+$('resetBtn').onclick = () => { if (currentEndpoint) renderForm(currentEndpoint); };
+$('copyCurlBtn').onclick = () => {
+  if (!currentEndpoint) { showToast('请先选择端点'); return; }
+  let req; try { req = buildRequest(); } catch (e) { showToast(e.message, 'error'); return; }
+  const c = buildCurl(req);
+  navigator.clipboard?.writeText(c).then(() => showToast('curl 已复制', 'success')).catch(() => showToast('复制失败', 'error'));
+};
+$('copyRespBtn').onclick = () => {
+  if (!lastResponse) { showToast('暂无响应'); return; }
+  const s = typeof lastResponse.data === 'string' ? lastResponse.data : JSON.stringify(lastResponse.data, null, 2);
+  navigator.clipboard?.writeText(s).then(() => showToast('响应已复制', 'success')).catch(() => showToast('复制失败', 'error'));
+};
+$('clearRespBtn').onclick = () => {
+  lastResponse = null;
+  $('respBody').innerHTML = `<div class="resp-empty"><div class="icon">↳</div><div class="title">等待响应</div><div class="hint">已清空</div></div>`;
+  $('statusBadge').className = 'status-badge idle'; $('statusBadge').textContent = 'IDLE';
+  $('metaStatus').textContent = '—'; $('metaDuration').textContent = '—'; $('metaSize').textContent = '—';
+};
+document.querySelectorAll('.resp-tab').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.resp-tab').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    currentRespTab = b.dataset.tab;
+    renderRespTab();
+  };
+});
+$('baseUrl').addEventListener('change', () => {
+  client.baseUrl = $('baseUrl').value.replace(/\/+$/, '');
+  localStorage.setItem('endless_debug_base_url', $('baseUrl').value);
+  checkHealth();
+});
+$('networkPreset').onchange = async () => {
+  const v = $('networkPreset').value;
+  if (!v) return;
+  const n = NETWORKS[v];
+  if (!confirm(`确认切换后端网络到 ${n.label}？\nRPC: ${n.rpc}`)) {
+    $('networkPreset').value = currentNetwork || 'devnet';
+    return;
+  }
+  try {
+    client.adminToken = $('adminToken').value || '';
+    const result = await client.switchNetwork(v, n.rpc);
+    currentNetwork = result.network;
+    renderNetworkStatus(result);
+    showToast(`已切换至 ${result.network} · ${result.activeUrl}`, 'success');
+  } catch (e) {
+    const force = confirm(`切换失败：${e.message || e}\n\n是否强制切换（绕过探活检查）？`);
+    if (force) {
+      try {
+        const result = await client.switchNetwork(v, n.rpc, true);
+        currentNetwork = result.network;
+        renderNetworkStatus(result);
+        showToast(`已强制切换至 ${result.network} · ${result.activeUrl}`, 'success');
+      } catch (e2) {
+        showToast('强制切换失败：' + (e2.message || e2), 'error');
+        $('networkPreset').value = currentNetwork || 'devnet';
+      }
+    } else {
+      $('networkPreset').value = currentNetwork || 'devnet';
+    }
+  }
+};
+$('histToggle').onclick = () => $('histDrawer').classList.toggle('open');
+$('histClear').onclick = () => { localStorage.removeItem(HKEY); renderHistory(); showToast('历史已清空', 'success'); };
+$('errSearch').addEventListener('input', e => renderErrorDict(e.target.value));
+
+$('sdkSearch').addEventListener('input', e => renderSdkMethods(e.target.value));
+$('sdkCallBtn').onclick = callSdkMethod;
+$('sdkResetBtn').onclick = () => { if (currentSdkMethod) renderSdkForm(currentSdkMethod); };
+$('sdkCopyCall').onclick = () => {
+  if (!currentSdkMethod) { showToast('请先选择方法'); return; }
+  let built; try { built = buildSdkCall(); } catch (e) { showToast(e.message, 'error'); return; }
+  if (!built) return;
+  const code = buildSdkCallCode(built.callArgs);
+  navigator.clipboard?.writeText(code).then(() => showToast('调用代码已复制', 'success')).catch(() => showToast('复制失败', 'error'));
+};
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter' && $(`view-console`).classList.contains('active')) {
+    sendRequest();
+  }
+});
+
+/* =========================================================================
+ *  Init
+ * ========================================================================= */
+(function init() {
+  const saved = localStorage.getItem('endless_debug_base_url');
+  if (saved) { $('baseUrl').value = saved; client.baseUrl = saved.replace(/\/+$/, ''); }
+  const savedToken = localStorage.getItem('endless_debug_admin_token');
+  if (savedToken) $('adminToken').value = savedToken;
+  $('adminToken').addEventListener('change', () => {
+    localStorage.setItem('endless_debug_admin_token', $('adminToken').value);
+  });
+
+  renderEndpoints();
+  renderErrorDict();
+  renderSdkMethods();
+  renderHistory();
+  selectSdkMethod('getAccountInfo');
+  selectEndpoint('health');
+  checkHealth();
+  setInterval(checkHealth, 30000);
+})();
+</script>
+</body>
+</html>

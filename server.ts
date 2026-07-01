@@ -52,8 +52,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 import swaggerUi from 'swagger-ui-express';
-import swaggerSpec from './swagger.config';
+import swaggerSpecDynamic from './swagger.config';
 import { logRequestResponse } from './logger';
 import {
     readContractState,
@@ -83,6 +85,8 @@ import {
     normalizeAddressEndpoint,
     encodeEntryFunctionPayload,
     encodeMultisigPayload,
+    getCurrentNetworkConfig,
+    switchNetwork,
 } from './contractService';
 import { EndlessAPIError, ErrorHandler } from './errorDefinitions';
 
@@ -91,9 +95,20 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.ENDLESS_SIDECAR_PORT || process.env.PORT || 3001);
 
+function loadSwaggerSpec(): any {
+    const staticPath = path.join(__dirname, 'swagger.json');
+    if (fs.existsSync(staticPath)) {
+        return JSON.parse(fs.readFileSync(staticPath, 'utf-8'));
+    }
+    return swaggerSpecDynamic;
+}
+const swaggerSpec = loadSwaggerSpec();
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(express.static('public'));
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/swagger.json', (_req: Request, res: Response) => {
@@ -217,6 +232,38 @@ app.get('/api/health', asyncHandler(async (_req, _res) => {
 
 app.get('/api/ledger', asyncHandler(async (_req, _res) => {
     return await checkRpcHealth();
+}));
+
+// ----------------------------------------------------------------------------
+// 网络管理（运行时切换）
+// ----------------------------------------------------------------------------
+
+function adminAuth(req: Request, res: Response, next: NextFunction) {
+    const token = process.env.ADMIN_TOKEN;
+    if (!token) return next();
+    const auth = req.headers.authorization || '';
+    if (auth !== `Bearer ${token}`) {
+        res.status(401).json({
+            error: { code: 401, message: 'Unauthorized: 无效的 ADMIN_TOKEN', timestamp: new Date().toISOString() },
+        });
+        return;
+    }
+    next();
+}
+
+app.get('/admin/network', asyncHandler(async (_req, _res) => {
+    return getCurrentNetworkConfig();
+}));
+
+app.post('/admin/network', adminAuth, asyncHandler(async (req, _res) => {
+    const b = req.body || {};
+    if (!b.network) throw ErrorHandler.validationError('network', 'network 不能为空');
+    return switchNetwork({
+        network: String(b.network),
+        url: b.url ? String(b.url) : undefined,
+        endpoints: b.endpoints,
+        skipProbe: b.skipProbe === true,
+    });
 }));
 
 // ----------------------------------------------------------------------------
@@ -548,7 +595,8 @@ app.use((req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
+    const cfg = getCurrentNetworkConfig();
     console.log(`\n[Endless Sidecar] 监听 http://localhost:${PORT}`);
-    console.log(`[Endless Sidecar] 网络: ${process.env.ENDLESS_NETWORK || 'devnet'}`);
-    console.log(`[Endless Sidecar] RPC:   ${process.env.ENDLESS_NETWORK_URL || '<unset>'}\n`);
+    console.log(`[Endless Sidecar] 网络: ${cfg.network}`);
+    console.log(`[Endless Sidecar] RPC:   ${cfg.activeUrl}\n`);
 });
