@@ -304,12 +304,12 @@ export class FailoverEndlessClient {
     }
 
     private createEndlessInstance(endpoint: EndpointConfig): Endless {
-        // 若端点显式配置了 chain_id，说明实际链 ID 与 SDK 内置 NetworkToChainId 映射不一致
-        // （例如 devnet 节点返回 chainId=220）。改用 Network.CUSTOM 让 SDK 通过 getLedgerInfo
-        // 查询真实 chainId，避免交易提交时触发 BAD_CHAIN_ID 校验失败。
-        const useCustomNetwork = Boolean(endpoint.chain_id);
+        // 始终使用 Network.CUSTOM，让 SDK 通过 getLedgerInfo 查询真实 chainId。
+        // 原因：SDK 内置 NetworkToChainId 映射与 Endless 实际节点不一致
+        // （如 devnet 内置为 11，但实际节点返回 220），
+        // 若使用内置映射会导致交易签名时 chain_id 不匹配，触发 BAD_CHAIN_ID。
         const config: EndlessConfig = {
-            network: useCustomNetwork ? Network.CUSTOM : this.network,
+            network: Network.CUSTOM,
             fullnode: endpoint.url,
         } as EndlessConfig;
         return new Endless(config);

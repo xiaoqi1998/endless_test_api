@@ -11,6 +11,7 @@
 <meta name="robots" content="index, follow" />
 <meta name="application-name" content="Endless API Console" />
 <meta name="google-site-verification" content="googlefac7c2b03389aa88" />
+<meta name="google-site-verification" content="us4gGzWH3iXwVOqbH74R7K6JHh4Kopayn6_ute9JK9Q" />
 
 <!-- Open Graph -->
 <meta property="og:type" content="website" />
@@ -535,7 +536,6 @@ pre.json-block .hljs { background: transparent; padding: 0; }
         <option value="mainnet">Mainnet</option>
         <option value="testnet">Testnet (221)</option>
         <option value="devnet" selected>Devnet (220)</option>
-        <option value="local">Local</option>
       </select>
     </div>
     <div class="field-base" id="adminTokenWrap">
@@ -1412,7 +1412,7 @@ function buildRequest() {
 }
 
 function buildCurl(req) {
-  const base = $('baseUrl').value.replace(/\/+$/, '');
+  const base = window.location.origin;
   let url = base + req.path;
   if (Object.keys(req.query).length) {
     const qs = new URLSearchParams();
@@ -1887,6 +1887,7 @@ $('networkPreset').onchange = async () => {
   const v = $('networkPreset').value;
   if (!v) return;
   const n = NETWORKS[v];
+  if (!n) { showToast('不支持的网络: ' + v, 'error'); $('networkPreset').value = currentNetwork || 'devnet'; return; }
   if (!confirm(`确认切换后端网络到 ${n.label}？\nRPC: ${n.rpc}`)) {
     $('networkPreset').value = currentNetwork || 'devnet';
     return;
